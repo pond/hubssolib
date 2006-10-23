@@ -10,6 +10,23 @@
 #                             split from Hub application.             #
 #######################################################################
 
+# Location of Hub application root.
+HUB_PATH_PREFIX = '/rails/hub'
+
+# Time limit, *in seconds*, for the account inactivity timeout.
+# If a user performs no Clubhouse actions during this time they
+# will be automatically logged out upon their next action.
+HUBSSOLIB_IDLE_TIME_LIMIT = 15 * 60
+
+# Random file location.
+HUBSSOLIB_RND_FILE_PATH = '/home/adh/.rnd'
+
+# Session data cookie name.
+HUBSSOLIB_SESSION_DATA_KEY = 'hubapp_session_data'
+
+# Session support cookie name.
+HUBSSOLIB_SESSION_SUPPORT_KEY = 'hubapp_session_support'
+
 module HubSsoLib
 
   #######################################################################
@@ -107,18 +124,30 @@ module HubSsoLib
       return nil
     end
 
+    # Encode some given data in base-64 format with no line breaks.
+    #
+    def pack64(data)
+      [data].pack('m1000000') # Stupid long number to avoid "\n" in the output
+    end
+
+    # Decode some given data from base-64 format with no line breaks.
+    #
+    def unpack64(data)
+      data.unpack('m').first
+    end
+
     # Encrypt and base-64 encode the given data with the given passphrase.
     # Returns the encoded result.
     #
     def encode(data, passphrase)
-      [encrypt(data, passphrase)].pack('m1000000') # Stupid long number to avoid "\n" in the output
+      pack64(encrypt(data, passphrase))
     end
 
     # Decrypt and base-64 decode the given data with the given passphrase.
     # Returns the decoded result or 'nil' on error.
     #
     def decode(data, passphrase)
-      decrypt(data.unpack('m').first, passphrase)
+      decrypt(unpack64(data), passphrase)
     rescue
       return nil
     end
@@ -194,10 +223,10 @@ module HubSsoLib
     # particular order.
     #
     ROLES = {
-              :admin       => 'Administrator',
-              :webmaster   => 'Webmaster',
-              :privileged  => 'Privileged user',
-              :normal      => 'Normal user'
+              :admin      => 'Administrator',
+              :webmaster  => 'Webmaster',
+              :privileged => 'Advanced user',
+              :normal     => 'Normal user'
             }
 
     ADMIN  = :admin
@@ -228,8 +257,8 @@ module HubSsoLib
     # classes are extended with to_authenticated_roles methods, which
     # provide other ways of creating Roles objects.
     #
-    def initialize(first_ever_user = false)
-      if (first_ever_user)
+    def initialize(admin = false)
+      if (admin)
         @role_array = [ ADMIN ]
       else
         @role_array = [ NORMAL ]
@@ -277,7 +306,13 @@ module HubSsoLib
         human_names.push(HubSsoLib::Roles.get_display_name(role))
       end
 
-      return human_names.join(', ')
+      if (human_names.length == 0)
+        return ''
+      elsif (human_names.length == 1)
+        return human_names[0]
+      else
+        return human_names[0..-2].join(', ') + ' and ' + human_names.last
+      end
     end
 
     # Do nothing - this is just useful for polymorphic code, where a function
@@ -348,23 +383,22 @@ module HubSsoLib
     # Initialize a permissions object. The map is a hash which maps action
     # names, expressed as symbols, to roles, expressed as individual symbols,
     # equivalent strings, or arrays of multiple strings or symbols. Use 'nil'
-    # to indicate permission for the general public - no login required.
+    # to indicate permission for the general public - no login required - or
+    # simply omit the action (unlisted actions are permitted).
     #
-    # Example mapping for a generic controller used as a default parameter,
-    # though you'd almost certainly always want to provide alternatives. It
-    # requires a logged in user for new, create, edit and update; a logged
-    # in user that's any privilege level above normal for delete; but will
-    # let anyone at all list or show items.
+    # Example mapping for a generic controller:
     #
-    def initialize(pmap = {
-                            :new     => [ :admin, :webmaster, :privileged, :normal ],
-                            :create  => [ :admin, :webmaster, :privileged, :normal ],
-                            :edit    => [ :admin, :webmaster, :privileged, :normal ],
-                            :update  => [ :admin, :webmaster, :privileged, :normal ],
-                            :delete  => [ :admin, :webmaster, :privileged ],
-                            :list    => nil,
-                            :show    => nil
-                          })
+    # {
+    #   :new     => [ :admin, :webmaster, :privileged, :normal ],
+    #   :create  => [ :admin, :webmaster, :privileged, :normal ],
+    #   :edit    => [ :admin, :webmaster, :privileged, :normal ],
+    #   :update  => [ :admin, :webmaster, :privileged, :normal ],
+    #   :delete  => [ :admin, :webmaster, :privileged ],
+    #   :list    => nil,
+    #   :show    => nil
+    # }
+    #
+    def initialize(pmap)
       @permissions = pmap
     end
 
@@ -375,16 +409,94 @@ module HubSsoLib
     # it to a Roles object internally (so you could pass a role symbol,
     # string, array of symbols or strings, or comma-separated string).
     #
+    # Passing an empty roles string will tell you whether or not the
+    # action requires login. Only actions not in the permissions list or
+    # those with a 'nil' list of roles will generate a result 'true',
+    # since any other actions will require your empty roles string to
+    # include at least one role (which it obviously doesn't).
+    #
     def permitted?(roles, action)
       action = action.to_s.intern
       roles  = roles.to_authenticated_roles
 
-      return false unless @permissions.include?(action)
+      return true unless @permissions.include?(action)
       return true if @permissions[action].nil?
       return roles.include?(@permissions[action])
     end
-
   end # Permissions class
+
+  #######################################################################
+  # Module:  User                                                       #
+  #          By Hipposoft, 2006                                         #
+  #                                                                     #
+  # Purpose: A representation of the Hub application's User Model in    #
+  #          terms of a simple set of properties, so that applications  #
+  #          don't need User access to understand user attributes.      #
+  #                                                                     #
+  # Author:  A.D.Hodgkinson                                             #
+  #                                                                     #
+  # History: 21-Oct-2006 (ADH): Created.                                #
+  #######################################################################
+
+  class User
+    attr_accessor :salt
+    attr_accessor :roles
+    attr_accessor :updated_at
+    attr_accessor :activated_at
+    attr_accessor :real_name
+    attr_accessor :crypted_password
+    attr_accessor :remember_token_expires_at
+    attr_accessor :activation_code
+    attr_accessor :member_id
+    attr_accessor :id
+    attr_accessor :password_reset_code
+    attr_accessor :remember_token
+    attr_accessor :email
+    attr_accessor :created_at
+    attr_accessor :password_reset_code_expires_at
+
+    def initialize
+      self.salt = nil
+      self.roles = nil
+      self.updated_at = nil
+      self.activated_at = nil
+      self.real_name = nil
+      self.crypted_password = nil
+      self.remember_token_expires_at = nil
+      self.activation_code = nil
+      self.member_id = nil
+      self.id = nil
+      self.password_reset_code = nil
+      self.remember_token = nil
+      self.email = nil
+      self.created_at = nil
+      self.password_reset_code_expires_at = nil
+    end
+  end
+
+  #######################################################################
+  # Module:  SessionData                                                #
+  #          By Hipposoft, 2006                                         #
+  #                                                                     #
+  # Purpose: Session support object, used to store session metadata in  #
+  #          an insecure cross-application cookie.                      #
+  #                                                                     #
+  # Author:  A.D.Hodgkinson                                             #
+  #                                                                     #
+  # History: 22-Oct-2006 (ADH): Created.                                #
+  #######################################################################
+
+  class SessionData
+    attr_accessor :last_used
+    attr_accessor :return_to
+    attr_accessor :flash
+
+    def initialize
+      self.last_used = Time.now.utc
+      self.return_to = nil
+      self.flash     = {}
+    end
+  end
 
   #######################################################################
   # Module:  Core                                                       #
@@ -403,20 +515,12 @@ module HubSsoLib
   module Core
 
     # Returns true or false if the user is logged in.
-    # Preloads @hubssolib_current_user with the user model if they're logged in.
+    #
+    # Preloads @hubssolib_current_user with user data if logged in.
+    #
     def hubssolib_logged_in?
-      (@hubssolib_current_user ||= (hubssolib_get_user_data || false)).is_a?(User)
-    end
-
-    # Accesses the current user from the session.
-    def hubssolib_current_user
-      @hubssolib_current_user if hubssolib_logged_in?
-    end
-
-    # Store the given user in the session.
-    def hubssolib_current_user=(new_user)
-      hubssolib_set_user_data(new_user)
-      @hubssolib_current_user = new_user
+      user = self.hubssolib_current_user
+      return user && user != :false ? true : false
     end
 
     # Check if the user is authorized to perform the current action. If calling
@@ -428,85 +532,176 @@ module HubSsoLib
     # compared against the caller's permissions hash and the action name.
     #
     def hubssolib_authorized?(action = action_name, classname = self.class)
-      return classname.permissions.permitted?(self.hubssolib_current_user.roles, action)
-    end
 
-    # Filter method to enforce a login requirement.
-    #
-    # To require logins for all actions, use this in your controllers:
-    #
-    #   before_filter :login_required
-    #
-    # To require logins for specific actions, use this in your controllers:
-    #
-    #   before_filter :login_required, :only => [ :edit, :update ]
-    #
-    # To skip this in a subclassed controller:
-    #
-    #   skip_before_filter :login_required
-    #
-    def hubssolib_login_required
-      # Uncomment for HTTP basic authentication support:
-      #
-      # username, passwd = get_auth_data
-      # self.current_user ||= User.authenticate(username, passwd) || :false if username && passwd
-      result = hubssolib_logged_in? && hubssolib_authorized? ? true : hubssolib_access_denied
+      # Classes with no permissions object always authorise everything.
+      # Otherwise, ask the permissions object for its opinion.
 
-      if (result == true)
-        hubssolib_ensure_https
-        hubssolib_check_session_expiry
+      if (classname.respond_to? :hubssolib_permissions)
+        return classname.hubssolib_permissions.permitted?(self.hubssolib_current_user.roles, action)
+      else
+        return true
       end
     end
 
-    # Filter method to call to update the idle timeout, even for
-    # methods
+    # Is the current user privileged? Anything other than normal user
+    # privileges will suffice. Can be called if not logged in. Returns
+    # 'false' for logged out or normal user privileges only, else 'true'.
+    #
+    def hubssolib_privileged?
+      return false unless hubssolib_logged_in?
 
-    def hubssolib_update_session_expiry
-      # See also private method hubssolib_check_session_expiry
-      @session[:last_used] = Time.now.utc
+      pnormal = HubSsoLib::Roles.new(false).to_s
+      puser   = self.hubssolib_current_user.roles.to_authenticated_roles.to_s
+
+      return (puser && !puser.empty? && puser != pnormal)
     end
 
-    # Redirect as appropriate when an access request fails.
+    # Log out the user. Very few applications should ever need to call this,
+    # though Hub certainly does and it gets used internally too.
     #
-    # The default action is to redirect to the login screen.
+    def hubssolib_log_out
+      # Causes the "hubssolib_current_user=" method to run, which
+      # deals with everything else.
+      self.hubssolib_current_user = nil
+    end
+
+    # Accesses the current user from the cookie or internal cache.
+    # The cache is used because of the IMHO horrible Rails cookie
+    # API - a value we set right now, then read back, does not get
+    # returned. The values we read are from the last browser
+    # response, always; the values we set are to be sent out upon
+    # the next browser request, always. This means we can't just
+    # set values in the cookie and rely on being able to read them
+    # later, but before another request has been processed. Hence
+    # the cache.
     #
-    # Override this method in your controllers if you want to have special
-    # behavior in case the user is not authorized
-    # to access the requested action.  For example, a popup window might
-    # simply close itself.
-    def hubssolib_access_denied
-      # Uncomment commented out code for XML service support.
-      #
-      #respond_to do |accepts|
-      #  accepts.html do
-          flash[:alert] = 'You do not have permission to carry out that action on this site.'
-          flash.discard
+    def hubssolib_current_user
+      @hubssolib_current_user ||= hubssolib_get_user_data
+    end
+
+    # Store the given user data in the cookie
+    #
+    def hubssolib_current_user=(new_user)
+      # We have to distinguish between "code just started running,
+      # @hubssolib_current_user not defined yet" and "someone set
+      # the user to 'nil' to log out" states. We do this by setting
+      # a user value of :false, a symbol, so that "user ||= thing"
+      # will continue to return ":false" rather than "thing".
+
+      @hubssolib_current_user = new_user || :false
+      hubssolib_set_user_data(new_user)
+    end
+
+    # Accesses the current session from the cookie. Creates a new
+    # session object if need be.
+    #
+    def hubssolib_current_session
+      @hubssolib_current_session ||= hubssolib_get_session_data || HubSsoLib::SessionData.new
+    end
+
+    # Store the given session data in the cookie
+    #
+    def hubssolib_current_session=(new_session)
+      @hubssolib_current_session = new_session
+      hubssolib_set_session_data(new_session)
+    end
+
+    # Return a human-readable unique ID for a user. We don't want to
+    # have e-mail addresses all over the place, but don't want to rely
+    # on real names as unique - they aren't. Instead, produce a
+    # composite of the user's account database ID (which must be
+    # unique by definition) and their real name.
+    #
+    def hubssolib_unique_name
+      user = hubssolib_current_user
+      user ? "#{user.real_name} (#{user.id})" : 'Anonymous'
+    end
+
+    # Main filter method to implement HubSsoLib permissions management,
+    # session expiry and so-on. Called from controllers only.
+    #
+    def hubssolib_update_state
+
+      # Does this action require a logged in user?
+
+      if (self.class.respond_to? :hubssolib_permissions)
+        login_is_required = !self.class.hubssolib_permissions.permitted?('', action_name)
+      else
+        login_is_required = false
+      end
+
+      # If we require login but we're logged out, redirect to Hub login.
+
+      logged_in = hubssolib_logged_in?
+
+      if (login_is_required and logged_in == false)
+        hubssolib_store_location
+        return hubssolib_must_login
+      end
+
+      # If we reach here the user is either logged, or the method does
+      # not require them to be. In the latter case, if we're not logged
+      # in there is no more work to do - exit early.
+
+      return true unless logged_in # true -> let action processing continue
+
+      # So we reach here knowing we're logged in, but the action may or
+      # may not require authorisation.
+
+      unless (login_is_required)
+
+        # We have to update session expiry even for actions that don't
+        # need us to be logged in, since we *are* logged in and need to
+        # maintain that state. If, though, the session expires, we just
+        # quietly log out and let action processing carry on.
+
+        if (hubssolib_session_expired?)
+          hubssolib_log_out
+          hubssolib_set_flash(:attention, 'Your session timed out, so you are no longer logged in.')
+        else
+          hubssolib_set_last_used(Time.now.utc)
+        end
+
+        return true # true -> let action processing continue
+
+      else
+
+        # Login *is* required for this action. If the session expires,
+        # redirect to Hub's login page via its expiry action. Otherwise
+        # check authorisation and allow action processing to continue
+        # if OK, else indicate that access is denied.
+
+        if (hubssolib_session_expired?)
+          hubssolib_store_location
+          hubssolib_log_out
+          hubssolib_set_flash(:attention, 'Sorry, your session timed out; you need to log in again to continue.')
+
           # We mean this: redirect_to :controller => 'account', :action => 'login'
           # ...except for the Hub, rather than the current application (whatever
           # it may be).
-          redirect_to '/rails/hub/account/login'
-      #  end
-      #  accepts.xml do
-      #    headers["Status"]           = "Unauthorized"
-      #    headers["WWW-Authenticate"] = %(Basic realm="Web Password")
-      #    render :text => "Could't authenticate you", :status => '401 Unauthorized'
-      #  end
-      #end
-      false
+          redirect_to HUB_PATH_PREFIX + '/account/login'
+        else
+          hubssolib_set_last_used(Time.now.utc)
+          return hubssolib_authorized? ? true : hubssolib_access_denied
+        end
+
+      end
     end
 
     # Store the URI of the current request in the session.
     #
     # We can return to this location by calling #redirect_back_or_default.
     def hubssolib_store_location
-      session[:return_to] = request.request_uri
+      hubssolib_set_return_to(request.request_uri)
     end
 
     # Redirect to the URI stored by the most recent store_location call or
     # to the passed default.
     def hubssolib_redirect_back_or_default(default)
-      session[:return_to] ? redirect_to_url(session[:return_to]) : redirect_to(default)
-      session[:return_to] = nil
+      url = hubssolib_get_return_to
+
+      url ? redirect_to_url(url) : redirect_to(default)
+      hubssolib_set_return_to(nil)
     end
 
     # Ensure the current request is carried out over HTTPS by redirecting
@@ -516,77 +711,156 @@ module HubSsoLib
       redirect_to({ :protocol => 'https://' }) unless request.ssl?
     end
 
-    # Inclusion hook to make #hubssolib_current_user, #hubssolib_logged_in?
-    # and #hubssolib_authorized? available as ActionView helper methods.
-    def self.included(base)
-      base.send :helper_method, :hubssolib_current_user, :hubssolib_logged_in?, :hubssolib_authorized?
+    # Public methods to set some data that would normally go in @session,
+    # but can't because it needs to be accessed across applications. It is
+    # put in an insecure support cookie instead. There are some related
+    # private methods for things like session expiry too.
+    #
+    def hubssolib_get_flash()
+      hubssolib_get_field(:flash) || {}
     end
 
-    # Uncomment the following as part of enabling "remember me" functions:
+    def hubssolib_set_flash(symbol, message)
+      f = hubssolib_get_flash
+      f[symbol] = message
+      hubssolib_set_field(:flash=, f)
+    end
+
+    def hubssolib_clear_flash
+      hubssolib_set_field(:flash=, {})
+    end
+
+    # Helper methods to output flash data. It isn't merged into the standard
+    # application flash with a filter because the rather daft and difficult
+    # to manage lifecycle model of the standard flash gets in the way.
     #
-    ## When called with before_filter :login_from_cookie will check for an :auth_token
-    ## cookie and log the user back in if apropriate
-    #def login_from_cookie
-    #  return unless cookies[:auth_token] && !logged_in?
-    #  user = User.find_by_remember_token(cookies[:auth_token])
-    #  if user && user.remember_token?
-    #    user.remember_me
-    #    self.hubssolib_current_user = user
-    #    cookies[:auth_token] = { :value => self.hubssolib_current_user.remember_token , :expires => self.hubssolib_current_user.remember_token_expires_at }
-    #    flash[:notice] = "Logged in successfully"
-    #  end
-    #end
-
-  private
-
-    # Enforce a logged in idle timeout; only to be called when an
-    # action that requires login is being run.
+    # First, return tags for a flash using the given key, clearing the
+    # result in the flash hash now it has been used.
     #
-    def hubssolib_check_session_expiry
+    def hubssolib_flash_tag(key)
+      value = hubssolib_get_flash()[key]
 
-      return unless hubssolib_logged_in?
-
-      if (@session[:last_used].class == Time and Time.now.utc - @session[:last_used] > IDLE_TIME_LIMIT)
-        hubssolib_store_location
-        # We mean this: redirect_to :controller => 'account', :action => 'expire'
-        # ...except for the Hub, rather than the current application (whatever
-        # it may be).
-        redirect_to '/rails/hub/account/expire'
+      if (value)
+        hubssolib_set_flash(key, nil)
+        return "<h2 align=\"left\" class=\"#{key}\">#{value}</h2><p />"
       else
-        @session[:last_used] = Time.now.utc
+        return ''
       end
     end
 
-    # Uncomment for HTTP basic authentication support:
+    # Return tags for a standard application flash using the given key.
     #
-    ## gets BASIC auth info
-    #def get_auth_data
-    #  user, pass = nil, nil
-    #  # extract authorisation credentials
-    #  if request.env.has_key? 'X-HTTP_AUTHORIZATION'
-    #    # try to get it where mod_rewrite might have put it
-    #    authdata = request.env['X-HTTP_AUTHORIZATION'].to_s.split
-    #  elsif request.env.has_key? 'HTTP_AUTHORIZATION'
-    #    # this is the regular location
-    #    authdata = request.env['HTTP_AUTHORIZATION'].to_s.split
-    #  end
-    #
-    #  # at the moment we only support basic authentication
-    #  if authdata && authdata[0] == 'Basic'
-    #    user, pass = Base64.decode64(authdata[1]).split(':')[0..1]
-    #  end
-    #  return [user, pass]
-    #end
+    def hubssolib_standard_flash_tag(key)
+      value = flash[key] if (flash)
 
-    # Retrieve user data from the session data cookie.
+      if (value)
+        flash.delete(key)
+        return "<h2 align=\"left\" class=\"#{key}\">#{value}</h2><p />"
+      else
+        return ''
+      end
+    end
+
+    # Return flash tags for known keys, then all remaining keys, from both
+    # the cross-application and standard standard flash hashes.
     #
-    def hubssolib_get_user_data
-      crypto     = HubSsoLib::Crypto.new(RND_FILE_PATH)
+    def hubssolib_flash_tags
+      # These known key values are used to guarantee an order in the output
+      # for cases where multiple messages are defined.
+
+      tags = hubssolib_flash_tag(:notice)    <<
+             hubssolib_flash_tag(:attention) <<
+             hubssolib_flash_tag(:alert)
+
+      tags << hubssolib_standard_flash_tag(:notice)    <<
+              hubssolib_standard_flash_tag(:attention) <<
+              hubssolib_standard_flash_tag(:alert)
+
+      # Now pick up anything else.
+
+      hubssolib_get_flash.each do |key, value|
+        tags << hubssolib_flash_tag(key) if (value)
+      end
+
+      flash.each do |key, value|
+        tags << hubssolib_standard_flash_tag(key) if (value)
+      end
+
+      return tags
+    end
+
+    # Inclusion hook to make various methods available as ActionView
+    # helper methods.
+    def self.included(base)
+      base.send :helper_method,
+                :hubssolib_current_user,
+                :hubssolib_logged_in?,
+                :hubssolib_authorized?,
+                :hubssolib_privileged?,
+                :hubssolib_flash_tags
+    end
+
+  private
+
+    # Indicate that the user must log in to complete their request.
+    # Returns false to enable a before_filter to return through this
+    # method while ensuring that the previous action processing is
+    # halted (since the overall return value is therefore 'false').
+    #
+    def hubssolib_must_login
+      hubssolib_set_flash(:alert, 'You must log in before you can continue.')
+      redirect_to HUB_PATH_PREFIX + '/account/login'
+      return false
+    end
+
+    # Indicate access is denied for a given logged in user's request.
+    # Returns false to enable a before_filter to return through this
+    # method while ensuring that the previous action processing is
+    # halted (since the overall return value is therefore 'false').
+    #
+    def hubssolib_access_denied
+      hubssolib_set_flash(:alert, 'You do not have permission to carry out that action on this site.')
+      redirect_to HUB_PATH_PREFIX + '/'
+      return false
+    end
+
+    # Check conditions for session expiry. Returns 'true' if session's
+    # last_used date indicates expiry, else 'false'.
+    #
+    def hubssolib_session_expired?
+
+      # 23-Oct-2006 (ADH):
+      #
+      # An exception, which is also a security hole of sorts. POST requests
+      # cannot be redirected because HTTP doesn't have that concept. If a user
+      # is editing a Wiki page, say, then goes away, comes back later and now
+      # finishes their edits, their session may have timed out. They submit
+      # the page but it's by POST so their submission details are lost. If they
+      # are lucky their browser might remember the form contents if they go
+      # back but not all do and not all users would think of doing that.
+      #
+      # To work around this, don't enforce a timeout for POST requests. Should
+      # a user on a public computer not log out, then a hacker arrive *after*
+      # the session expiry time (if they arrive before it expires then the
+      # except for POSTs is irrelevant), they could recover the session by
+      # constructing a POST request. It's a convoluted path, requires a user to
+      # have not logged out anyway, and the Hub isn't intended for Fort Knox.
+      # At the time of writing the trade-off of usability vs security is
+      # considered acceptable, though who knows, the view may change in future.
+
+      last_used = hubssolib_get_last_used
+      (request.method != :post && last_used && Time.now.utc - last_used > HUBSSOLIB_IDLE_TIME_LIMIT)
+    end
+
+    # Retrieve data from a given cookie with encrypted contents.
+    #
+    def hubssolib_get_cookie_data(name)
+      crypto     = HubSsoLib::Crypto.new(HUBSSOLIB_RND_FILE_PATH)
       passphrase = crypto.scramble_passphrase(request.remote_ip)
-      data       = cookies[SESSION_DATA_KEY]
+      data       = cookies[name]
       user       = nil
 
-      if (data && data != '')
+      if (data && !data.empty?)
         user = Marshal.load(crypto.decode(data, passphrase))
       end
 
@@ -595,26 +869,93 @@ module HubSsoLib
       return nil
     end
 
+    # Set the given cookie to a value of the given data, which
+    # will be encrypted.
+    #
+    def hubssolib_set_cookie_data(name, value)
+      if (value.nil?)
+        # Using cookies.delete *should* work but doesn't. Set the
+        # cookie with nil data instead.
+        data = nil
+      else
+        crypto     = HubSsoLib::Crypto.new(HUBSSOLIB_RND_FILE_PATH)
+        passphrase = crypto.scramble_passphrase(request.remote_ip)
+        data       = crypto.encode(Marshal.dump(value), passphrase)
+      end
+
+      # No expiry time; to aid security, use session cookies only.
+
+      cookies[name] = {
+                        :value   => data,
+                        :path    => '/rails',
+                        :secure  => true
+                      }
+    end
+
+    # Retrieve user data from the session data cookie.
+    #
+    def hubssolib_get_user_data
+      return hubssolib_get_cookie_data(HUBSSOLIB_SESSION_DATA_KEY)
+    end
+
     # Store user data in the session data cookie. Pass the user to store,
     # or 'nil' to clear the cookie.
     #
     def hubssolib_set_user_data(user)
-      if (user.nil?)
-        # Using cookies.delete(SESSION_DATA_KEY) *should* work but doesn't.
-        # Set the cookie with nil data instead.
-        data = nil
-      else
-        crypto     = HubSsoLib::Crypto.new(RND_FILE_PATH)
-        passphrase = crypto.scramble_passphrase(request.remote_ip)
-        data       = crypto.encode(Marshal.dump(user), passphrase)
-      end
+      hubssolib_set_cookie_data(HUBSSOLIB_SESSION_DATA_KEY, user)
+    end
 
-      cookies[SESSION_DATA_KEY] = {
-                                    :value   => data,
-                                    :expires => Time.now.utc + SESSION_DATA_EXPIRY,
-                                    :path    => '/rails',
-                                    :secure  => true
-                                  }
+    # Retrieve session data from the session support cookie.
+    #
+    def hubssolib_get_session_data
+      return hubssolib_get_cookie_data(HUBSSOLIB_SESSION_SUPPORT_KEY)
+    end
+
+    # Store session data in the session support cookie. Pass the session
+    # tostore, or 'nil' to clear the cookie.
+    #
+    def hubssolib_set_session_data(support)
+      hubssolib_set_cookie_data(HUBSSOLIB_SESSION_SUPPORT_KEY, support)
+    end
+
+    # Retrieve data from the session support cookie, with lazy initialisation.
+    #
+    def hubssolib_get_field(field)
+      data = self.hubssolib_current_session
+      return data.send(field)
+    rescue
+      return nil
+    end
+
+    # Set data in the session support cookie, merging with existing values and
+    # supporting lazy initialisation. Returns 'true' if successful, else 'false'.
+    #
+    def hubssolib_set_field(field, value)
+      data = self.hubssolib_current_session
+      data.send(field, value)
+      self.hubssolib_current_session = data
+
+      return true
+    rescue
+      return false
+    end
+
+    # Methods for session support using an independent, insecure cookie.
+
+    def hubssolib_get_last_used
+      hubssolib_get_field(:last_used)
+    end
+
+    def hubssolib_set_last_used(time)
+      hubssolib_set_field(:last_used=, time)
+    end
+
+    def hubssolib_get_return_to
+      hubssolib_get_field(:return_to)
+    end
+
+    def hubssolib_set_return_to(url)
+      hubssolib_set_field(:return_to=, url)
     end
 
   end # Core module
