@@ -739,6 +739,24 @@ module HubSsoLib
       user ? user.user_real_name : nil
     end
 
+    # Public read-only accessor methods for common user activities:
+    # return the Hub database ID of the current user account, or
+    # nil if there's no user. See also hubssolib_unique_name.
+    #
+    def hubssolib_get_user_id
+      user = self.hubssolib_current_user
+      user ? user.user_id : nil
+    end
+
+    # Public read-only accessor methods for common user activities:
+    # return the current user's e-mail address, or nil if there's
+    # no user.
+    #
+    def hubssolib_get_user_address
+      user = self.hubssolib_current_user
+      user ? user.user_email : nil
+    end
+
     # Return a human-readable unique ID for a user. We don't want to
     # have e-mail addresses all over the place, but don't want to rely
     # on real names as unique - they aren't. Instead, produce a
