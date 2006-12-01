@@ -21,9 +21,9 @@ module HubSsoLib
   HUB_PATH_PREFIX = '/rails/hub'
 
   # Time limit, *in seconds*, for the account inactivity timeout.
-  # If a user performs no Clubhouse actions during this time they
-  # will be automatically logged out upon their next action.
-  HUBSSOLIB_IDLE_TIME_LIMIT = 15 * 60
+  # If a user performs no Hub actions during this time they will
+  # be automatically logged out upon their next action.
+  HUBSSOLIB_IDLE_TIME_LIMIT = 60 * 60
 
   # Random file location.
   HUBSSOLIB_RND_FILE_PATH = '/home/adh/.rnd'
