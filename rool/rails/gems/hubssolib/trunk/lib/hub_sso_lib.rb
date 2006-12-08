@@ -8,6 +8,8 @@
 #                                                                     #
 # History: 20-Oct-2006 (ADH): First version of stand-alone library,   #
 #                             split from Hub application.             #
+#          08-Dec-2006 (ADH): DRB URI, path prefix and random file    #
+#                             path come from environment variables.   #
 #######################################################################
 
 module HubSsoLib
@@ -15,10 +17,10 @@ module HubSsoLib
   require 'drb'
 
   # DRb connection
-  HUBSSOLIB_DRB_URI = 'drbunix:/home/adh/rails/fcgi_sockets/hub_drb'
+  HUBSSOLIB_DRB_URI = ENV['HUB_CONNECTION_URI']
 
   # Location of Hub application root.
-  HUB_PATH_PREFIX = '/rails/hub'
+  HUB_PATH_PREFIX = ENV['HUB_PATH_PREFIX']
 
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
@@ -26,7 +28,7 @@ module HubSsoLib
   HUBSSOLIB_IDLE_TIME_LIMIT = 60 * 60
 
   # Random file location.
-  HUBSSOLIB_RND_FILE_PATH = '/home/adh/.rnd'
+  HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE']
 
   # Shared cookie name.
   HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
