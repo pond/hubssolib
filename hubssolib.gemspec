@@ -4,12 +4,12 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name     = 'hubssolib'
 
-  s.version  = '0.2.0'
+  s.version  = '0.2.1'
   s.author   = 'Andrew Hodgkinson and others'
   s.email    = 'ahodgkin@rowing.org.uk'
   s.homepage = 'http://pond.org.uk/ruby/hub/'
   s.date     = File.ctime('VERSION')
-  s.summary  = 'Cross-application single sign-on support library'
+  s.summary  = 'Cross-application single sign-on support library.'
 
   s.description = <<-EOF
     The Hub SSO Library supports single sign-on across multiple Rails
