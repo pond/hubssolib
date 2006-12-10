@@ -30,8 +30,9 @@ module HubSsoLib
   # Random file location.
   HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE']
 
-  # Shared cookie name.
+  # Shared cookie name and path.
   HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
+  HUBSSOLIB_COOKIE_PATH = ENV['HUB_COOKIE_PATH']
 
   #######################################################################
   # Class:   Crypto                                                     #
@@ -1095,9 +1096,9 @@ module HubSsoLib
       # No expiry time; to aid security, use session cookies only.
 
       cookies[name] = {
-                        :value   => data,
-                        :path    => '/rails',
-                        :secure  => true
+                        :value  => data,
+                        :path   => HUBSSOLIB_COOKIE_PATH,
+                        :secure => true
                       }
     end
 
