@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo
+echo Removing existing version in live and development repositories
+echo
+
+export GEM_PATH=/home/rool/live/rails/gems
+gem uninstall hubssolib
+export GEM_PATH=/home/rool/devel/rails/gems
+gem uninstall hubssolib
+
+unset GEM_PATH
+
+echo
+echo Installing new version in live and development repositories
+echo
+
+gem install $1 --install-dir=/home/rool/live/rails/gems
+gem install $1 --install-dir=/home/rool/devel/rails/gems
+
+echo
+echo Finished.
+echo
+
