@@ -85,7 +85,9 @@ module HubSsoLib
       if @rnd_size < 1024
         raise "HubSsoLib::Crypto objects need at least 1024 bytes of random data - file '#{rnd_file}' is too small"
       else
-        @rnd_data = File.open(rnd_file, 'rb').read(@rnd_size)
+        f = File.new(rnd_file, 'rb')
+        @rnd_data = f.read
+        f.close
       end
     end
 
