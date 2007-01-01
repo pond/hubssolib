@@ -609,6 +609,10 @@ module HubSsoLib
 
       return @sessions[key]
     end
+
+    def enumerate_sessions
+      @sessions
+    end
   end
 
   #######################################################################
@@ -1151,6 +1155,38 @@ module HubSsoLib
 
     def hubssolib_set_session_data(session)
       # Nothing to do presently - DRb handles everything
+    end
+
+    # Return an array of Hub User objects representing users based
+    # on a list of known sessions returned by the DRb server. Note
+    # that if an application exposes this method to a view, it is
+    # up to the application to ensure sufficient access permission
+    # protection for that view according to the webmaster's choice
+    # of site security level. Generally, normal users should not
+    # be allowed access.
+    #
+    def hubssolib_enumerate_users
+      DRb.start_service()
+
+      factory  = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
+      sessions = factory.enumerate_sessions()
+      users    = []
+
+      sessions.each do |key, value|
+        users.push(value.session_user)
+      end
+
+      return users
+
+    rescue Exception => e
+
+      # At this point there tends to be no Session data, so we're
+      # going to have to encode the exception data into the URI...
+
+      suffix   = '/' + CGI::escape(hubssolib_set_exception_data(e))
+      new_path = HUB_PATH_PREFIX + '/tasks/service'
+      redirect_to new_path + suffix unless request.path.include?(new_path)
+      return nil
     end
 
     # Encode exception data into a string suitable for using in a URL
