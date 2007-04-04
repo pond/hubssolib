@@ -34,6 +34,21 @@ module HubSsoLib
   HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
   HUBSSOLIB_COOKIE_PATH = ENV['HUB_COOKIE_PATH']
 
+  # Cache the random data. Assuming FCGI or similar, this code gets
+  # executed only once per FCGI instance initialisation rather than
+  # once per request.
+
+  attr_reader :HUBSSOLIB_RANDOM_DATA, :HUBSSOLIB_RANDOM_DATA_SIZE
+
+  HUBSSOLIB_RANDOM_DATA_SIZE = File.size(HUBSSOLIB_RND_FILE_PATH)
+  HUBSSOLIB_RANDOM_DATA_SIZE = 16384 if (HUBSSOLIB_RANDOM_DATA_SIZE > 16384)
+
+  if HUBSSOLIB_RANDOM_DATA_SIZE < 1024
+    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{rnd_file}' is too small"
+  else
+    HUBSSOLIB_RANDOM_DATA = File.read(HUBSSOLIB_RND_FILE_PATH)
+  end
+
   #######################################################################
   # Class:   Crypto                                                     #
   #          By Hipposoft, 2006                                         #
@@ -47,14 +62,13 @@ module HubSsoLib
   #                             'Crypto' from 'HubSsoCrypto'.           #
   #######################################################################
 
-  # Encryption and decryption utility object. Once instantiated with the
-  # filename of a file that holds at least 1K of pseudo-random data, a
+  # Encryption and decryption utility object. Once instantiated, a
   # HubSsoLib::Crypto object is used to encrypt and decrypt data with the
   # AES-256-CBC cipher. A single passphrase is used for both operations.
   # A SHA-256 hash of that passphrase is used as the encryption key.
   #
   # CBC operation requires an initialization vector for the first block of
-  # data during encryption and decryption. The file of random data is used
+  # data during encryption and decryption. A block of random data is used
   # for this in conjunction with the passphrase used to generate the key. By
   # so doing, the initialization vector is not revealed to third parties,
   # even though the source code of the object is available. The weakness is
@@ -63,33 +77,30 @@ module HubSsoLib
   # callers themselves to only have to remember the passphrase. See private
   # method obtain_iv() for more details.
   #
+  # The block of random data is obtained from the DRb server. It is usually
+  # a RAM-cached near-random file. The important behaviour is that the
+  # contents are not know to the outside world and the contents, while they
+  # may change at any point, don't change during the duration of a user
+  # log-in session (at least, if it changes, all current sessions will be
+  # harmlessly invalidated).
+  #
   class Crypto
 
     require 'openssl'
     require 'digest/sha2'
     require 'digest/md5'
 
-    # Initialize the HubSsoLib::Crypto object. Must pass a pathname to a file
-    # of effectively random data of at least 1K in length. If the data is
-    # larger than 16K in size, everything after the first 16K will be
-    # ignored. The data is cached internally when the object starts.
-    #
-    def initialize(rnd_file)
-      # Check the file size and find out how much data to read - at least 1K,
-      # no more than 16K. Store the size in @rnd_size and read the data into
-      # @rnd_data, both for use later.
-
-      @rnd_size = File.size(rnd_file)
-      @rnd_size = 16384 if (@rnd_size > 16384)
-
-      if @rnd_size < 1024
-        raise "HubSsoLib::Crypto objects need at least 1024 bytes of random data - file '#{rnd_file}' is too small"
-      else
-        f = File.new(rnd_file, 'rb')
-        @rnd_data = f.read
-        f.close
-      end
-    end
+    # # Initialize the HubSsoLib::Crypto object.
+    # #
+    # def initialize()
+    #   DRb.start_service()
+    # 
+    #   factory   = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
+    #   @rnd_data = factory.random_data()
+    #   @rnd_size = factory.random_data_size()
+    # 
+    #   DRb.stop_service()
+    # end
 
     # Generate a series of pseudo-random bytes of the given length.
     #
@@ -199,7 +210,7 @@ module HubSsoLib
     # be raised (failure is not expected).
     #
     def self.encode_object(object, passphrase)
-      crypto     = HubSsoLib::Crypto.new(HUBSSOLIB_RND_FILE_PATH)
+      crypto     = HubSsoLib::Crypto.new
       passphrase = crypto.scramble_passphrase(passphrase)
 
       return crypto.encode(Marshal.dump(object), passphrase)
@@ -216,7 +227,7 @@ module HubSsoLib
     # this method returns 'nil' should there be any decode problems.
     #
     def self.decode_object(data, passphrase)
-      crypto     = HubSsoLib::Crypto.new(HUBSSOLIB_RND_FILE_PATH)
+      crypto     = HubSsoLib::Crypto.new
       passphrase = crypto.scramble_passphrase(passphrase)
       object     = nil
 
@@ -254,11 +265,11 @@ module HubSsoLib
       # 33, thus providing an offset into the file from which we can safely
       # read 32 bytes of data.
 
-      offset = Digest::MD5.hexdigest(passphrase).hex % (@rnd_size - 32)
+      offset = Digest::MD5.hexdigest(passphrase).hex % (HubSsoLib::HUBSSOLIB_RANDOM_DATA_SIZE - 32)
 
       # Return 32 bytes of data from the random pool at the calculated offset.
 
-      return @rnd_data[offset..offset + 31]
+      return HubSsoLib::HUBSSOLIB_RANDOM_DATA[offset..offset + 31]
     end
 
   private
@@ -1108,6 +1119,17 @@ module HubSsoLib
                       }
     end
 
+    # Establish a single DRb factory connection.
+    #
+    def hubssolib_factory
+      if !defined? @factory
+        DRb.start_service()
+        @factory = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
+      end
+      
+      return @factory
+    end
+
     # Retrieve user data from the DRb server.
     #
     def hubssolib_get_user_data
@@ -1137,10 +1159,7 @@ module HubSsoLib
         hubssolib_set_secure_cookie_data(HUBSSOLIB_COOKIE_NAME, key)
       end
 
-      DRb.start_service()
-
-      factory = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
-      return factory.get_session(key)
+      return hubssolib_factory().get_session(key)
 
     rescue Exception => e
 
@@ -1166,10 +1185,7 @@ module HubSsoLib
     # be allowed access.
     #
     def hubssolib_enumerate_users
-      DRb.start_service()
-
-      factory  = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
-      sessions = factory.enumerate_sessions()
+      sessions = hubssolib_factory().enumerate_sessions()
       users    = []
 
       sessions.each do |key, value|
