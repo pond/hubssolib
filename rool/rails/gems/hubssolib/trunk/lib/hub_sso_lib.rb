@@ -1189,7 +1189,8 @@ module HubSsoLib
       users    = []
 
       sessions.each do |key, value|
-        users.push(value.session_user)
+        user = value.session_user
+        users.push(user) if (user && user.respond_to?(:user_id) && user.user_id)
       end
 
       return users
