@@ -4,10 +4,10 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name     = 'hubssolib'
 
-  s.version  = '0.2.6'
+  s.version  = '0.2.7'
   s.author   = 'Andrew Hodgkinson and others'
   s.email    = 'ahodgkin@rowing.org.uk'
-  s.homepage = 'http://pond.org.uk/ruby/hub/'
+  s.homepage = 'http://hub.pond.org.uk/'
   s.date     = File.ctime('VERSION')
   s.summary  = 'Cross-application single sign-on support library.'
 
@@ -23,5 +23,5 @@ spec = Gem::Specification.new do |s|
 
   s.files    = FileList['lib/**/*.rb', '[A-Z]*'].to_a
   s.has_rdoc = false # Sorry, no RDoc documentation yet
-  s.required_ruby_version = '>= 1.8.1' # Not tested on earlier versions
+  s.required_ruby_version = '>= 1.8.7' # Not tested on earlier versions
 end
