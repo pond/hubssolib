@@ -1,6 +1,6 @@
 #######################################################################
 # Module:  HubSsoLib                                                  #
-#          By Hipposoft, 2006                                         #
+#          (C) Hipposoft 2006                                         #
 #                                                                     #
 # Purpose: Cross-application same domain single sign-on support.      #
 #                                                                     #
@@ -10,6 +10,8 @@
 #                             split from Hub application.             #
 #          08-Dec-2006 (ADH): DRB URI, path prefix and random file    #
 #                             path come from environment variables.   #
+#          09-Mar-2011 (ADH): Updated for Hub on Rails 2.3.11 along   #
+#                             with several important bug fixes.       #
 #######################################################################
 
 module HubSsoLib
@@ -51,7 +53,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   Crypto                                                     #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: Encryption and decryption utilities.                       #
   #                                                                     #
@@ -299,7 +301,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   Roles                                                      #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: Shared methods for handling user account roles.            #
   #                                                                     #
@@ -459,7 +461,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   Permissions                                                #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: Methods to help, in conjunction with Roles, determine the  #
   #          access permissions a particular user is granted.           #
@@ -519,7 +521,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   User                                                       #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: A representation of the Hub application's User Model in    #
   #          terms of a simple set of properties, so that applications  #
@@ -531,7 +533,15 @@ module HubSsoLib
   #######################################################################
 
   class User
-    include DRb::DRbUndumped
+
+    # This *must not* be 'undumped', since it gets passed from clients
+    # back to the persistent DRb server process. A client thread may
+    # disappear and be recreated by the web server at any time; if the
+    # user object is undumpable, then the DRb server has to *call back
+    # to the client* (in DRb, clients are also servers...!) to find out
+    # about the object. Trouble is, if the client thread has been
+    # recreated, the server will be trying to access to stale objects
+    # that only exist if the garbage collector hasn't got to them yet.
 
     attr_accessor :user_salt
     attr_accessor :user_roles
@@ -570,7 +580,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   Session                                                    #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: Session support object, used to store session metadata in  #
   #          an insecure cross-application cookie.                      #
@@ -581,6 +591,13 @@ module HubSsoLib
   #######################################################################
 
   class Session
+
+    # Unlike a User, this *is* undumpable since it only gets passed from
+    # server to client. The server's always here to service requests
+    # from the client and used sessions are never garbage collected
+    # since the DRb server's front object, a SessionFactory, keeps them
+    # in a hash held within an instance variable.
+
     include DRb::DRbUndumped
 
     attr_accessor :session_last_used
@@ -598,7 +615,7 @@ module HubSsoLib
 
   #######################################################################
   # Class:   SessionFactory                                             #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: Build Session objects for DRb server clients. Maintains a  #
   #          hash of Session objects.                                   #
@@ -628,7 +645,7 @@ module HubSsoLib
 
   #######################################################################
   # Module:  Server                                                     #
-  #          By Hipposoft, 2006                                         #
+  #          (C) Hipposoft 2006                                         #
   #                                                                     #
   # Purpose: DRb server to provide shared data across applications.     #
   #          Thanks to RubyPanther, rubyonrails IRC, for suggesting     #
@@ -644,7 +661,8 @@ module HubSsoLib
 
   module Server
     def hubssolib_launch_server
-      DRb.start_service(HUBSSOLIB_DRB_URI, HubSsoLib::SessionFactory.new)
+      @@session_factory = HubSsoLib::SessionFactory.new
+      DRb.start_service(HUBSSOLIB_DRB_URI, @@session_factory)
       DRb.thread.join
     end
   end # Server module
@@ -864,7 +882,12 @@ module HubSsoLib
     # Main after_filter method to tidy up after running state changes.
     #
     def hubssolib_afterwards
-      # Nothing to do right now; maybe in future...
+      begin
+        DRb.current_server
+        DRb.stop_service()
+      rescue DRb::DRbServerNotFound
+        # Nothing to do; no service is running.
+      end
     end
 
     # Store the URI of the current request in the session, or store the
@@ -875,7 +898,7 @@ module HubSsoLib
     def hubssolib_store_location(uri_str = request.request_uri)
 
       if (uri_str && !uri_str.empty?)
-        uri_str = hubssolib_promote_uri_to_ssl(uri_str, request.host)
+        uri_str = hubssolib_promote_uri_to_ssl(uri_str, request.host) unless request.ssl?
         hubssolib_set_return_to(uri_str)
       else
         hubssolib_set_return_to(nil)
@@ -889,7 +912,7 @@ module HubSsoLib
       url = hubssolib_get_return_to
       hubssolib_set_return_to(nil)
 
-      url ? redirect_to_url(url) : redirect_to(default)
+      redirect_to(url || default)
     end
 
     # Take a URI and pass an optional host parameter. Decomposes the URI,
@@ -1003,7 +1026,7 @@ module HubSsoLib
     # string.
     #
     def hubssolib_get_exception_message(id_data)
-      hubssolib_get_exception_data(id_data)
+      hubssolib_get_exception_data(CGI::unescape(id_data))
     end
 
     # Inclusion hook to make various methods available as ActionView
@@ -1122,12 +1145,19 @@ module HubSsoLib
     # Establish a single DRb factory connection.
     #
     def hubssolib_factory
-      if !defined? @factory
-        DRb.start_service()
-        @factory = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
+
+      # See:
+      #   http://stackoverflow.com/questions/299219/where-is-the-correct-place-to-initialize-the-drb-service-within-a-rails-applicati
+      #
+      begin
+        DRb.current_server
+      rescue DRb::DRbServerNotFound
+        DRb.start_service
+        # Move to different ThreadGroup to stop Mongrel hang on exit.
+        ThreadGroup.new.add DRb.thread
       end
-      
-      return @factory
+
+      return @factory ||= DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
     end
 
     # Retrieve user data from the DRb server.
@@ -1165,8 +1195,12 @@ module HubSsoLib
 
       # At this point there tends to be no Session data, so we're
       # going to have to encode the exception data into the URI...
+      # It must be escaped twice, as many servers treat "%2F" in a
+      # URI as a "/" and Apache may flat refuse to serve the page,
+      # raising a 404 error unless "AllowEncodedSlashes on" is
+      # specified in its configuration.
 
-      suffix   = '/' + CGI::escape(hubssolib_set_exception_data(e))
+      suffix   = '/' + CGI::escape(CGI::escape(hubssolib_set_exception_data(e)))
       new_path = HUB_PATH_PREFIX + '/tasks/service'
       redirect_to new_path + suffix unless request.path.include?(new_path)
       return nil
@@ -1199,8 +1233,9 @@ module HubSsoLib
 
       # At this point there tends to be no Session data, so we're
       # going to have to encode the exception data into the URI...
+      # See earlier for double-escaping rationale.
 
-      suffix   = '/' + CGI::escape(hubssolib_set_exception_data(e))
+      suffix   = '/' + CGI::escape(CGI::escape(hubssolib_set_exception_data(e)))
       new_path = HUB_PATH_PREFIX + '/tasks/service'
       redirect_to new_path + suffix unless request.path.include?(new_path)
       return nil
@@ -1250,7 +1285,7 @@ end # HubSsoLib module
 
 #######################################################################
 # Classes: Standard class extensions for HubSsoLib Roles operations.  #
-#          By Hipposoft, 2006                                         #
+#          (C) Hipposoft 2006                                         #
 #                                                                     #
 # Purpose: Extensions to standard classes to support HubSsoLib.       #
 #                                                                     #
