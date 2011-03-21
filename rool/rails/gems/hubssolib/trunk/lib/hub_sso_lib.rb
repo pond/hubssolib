@@ -27,7 +27,7 @@ module HubSsoLib
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
   # be automatically logged out upon their next action.
-  HUBSSOLIB_IDLE_TIME_LIMIT = 60 * 60
+  HUBSSOLIB_IDLE_TIME_LIMIT = 240 * 60
 
   # Random file location.
   HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE']
