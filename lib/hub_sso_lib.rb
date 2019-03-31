@@ -19,10 +19,10 @@ module HubSsoLib
   require 'drb'
 
   # DRb connection
-  HUBSSOLIB_DRB_URI = ENV['HUB_CONNECTION_URI']
+  HUBSSOLIB_DRB_URI = ENV['HUB_CONNECTION_URI'] || 'drbunix:' + File.join( ENV['HOME'] || '/', '/.hub_drb')
 
   # Location of Hub application root.
-  HUB_PATH_PREFIX = ENV['HUB_PATH_PREFIX']
+  HUB_PATH_PREFIX = ENV['HUB_PATH_PREFIX'] || ''
 
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
@@ -30,7 +30,7 @@ module HubSsoLib
   HUBSSOLIB_IDLE_TIME_LIMIT = 240 * 60
 
   # Random file location.
-  HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE']
+  HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE'] || File.join( ENV['HOME'] || '/', '/.hub_random')
 
   # Shared cookie name and path.
   HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
@@ -42,13 +42,21 @@ module HubSsoLib
 
   attr_reader :HUBSSOLIB_RANDOM_DATA, :HUBSSOLIB_RANDOM_DATA_SIZE
 
+  if (!File.exist?(HUBSSOLIB_RND_FILE_PATH))
+    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{HUBSSOLIB_RND_FILE_PATH}' is missing"
+  end
+
   HUBSSOLIB_RANDOM_DATA_SIZE = File.size(HUBSSOLIB_RND_FILE_PATH)
   HUBSSOLIB_RANDOM_DATA_SIZE = 16384 if (HUBSSOLIB_RANDOM_DATA_SIZE > 16384)
 
   if HUBSSOLIB_RANDOM_DATA_SIZE < 1024
-    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{rnd_file}' is too small"
+    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{HUBSSOLIB_RND_FILE_PATH}' is too small"
   else
-    HUBSSOLIB_RANDOM_DATA = File.read(HUBSSOLIB_RND_FILE_PATH)
+    HUBSSOLIB_RANDOM_DATA = begin
+      File.open(HUBSSOLIB_RND_FILE_PATH) do | fh |
+        fh.read(HUBSSOLIB_RANDOM_DATA_SIZE)
+      end
+    end
   end
 
   #######################################################################
@@ -91,25 +99,25 @@ module HubSsoLib
     require 'openssl'
     require 'digest/sha2'
     require 'digest/md5'
+    require 'securerandom'
+    require 'base64'
 
     # # Initialize the HubSsoLib::Crypto object.
     # #
     # def initialize()
     #   DRb.start_service()
-    # 
+    #
     #   factory   = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
     #   @rnd_data = factory.random_data()
     #   @rnd_size = factory.random_data_size()
-    # 
+    #
     #   DRb.stop_service()
     # end
 
     # Generate a series of pseudo-random bytes of the given length.
     #
     def self.random_data(size)
-      data = ''
-      size.times { data << rand(256) }
-      data
+      SecureRandom.random_bytes(size)
     end
 
     def random_data(size)
@@ -119,7 +127,7 @@ module HubSsoLib
     # Encode some given data in base-64 format with no line breaks.
     #
     def self.pack64(data)
-      [data].pack('m1000000') # Stupid long number to avoid "\n" in the output
+      Base64.strict_encode64(data)
     end
 
     def pack64(data)
@@ -129,7 +137,7 @@ module HubSsoLib
     # Decode some given data from base-64 format with no line breaks.
     #
     def self.unpack64(data)
-      data.unpack('m').first
+      Base64.strict_decode64(data)
     end
 
     def unpack64(data)
@@ -151,7 +159,7 @@ module HubSsoLib
     # different size and content data is generated each time.
     #
     def encrypt(data, passphrase)
-      cipher = OpenSSL::Cipher::Cipher.new("aes-256-cbc")
+      cipher = OpenSSL::Cipher.new("aes-256-cbc")
       cipher.encrypt
 
       cipher.key = Digest::SHA256.digest(passphrase)
@@ -173,7 +181,7 @@ module HubSsoLib
     #   http://www.bigbold.com/snippets/posts/show/576
     #
     def decrypt(data, passphrase)
-      cipher = OpenSSL::Cipher::Cipher.new("aes-256-cbc")
+      cipher = OpenSSL::Cipher.new("aes-256-cbc")
       cipher.decrypt
 
       cipher.key = Digest::SHA256.digest(passphrase)
@@ -182,7 +190,8 @@ module HubSsoLib
       decrypted  = cipher.update(data)
       decrypted << cipher.final
 
-      rsize = decrypted[0]
+      rsize = decrypted[0].ord()
+
       return decrypted[rsize + 1..-1]
     rescue
       return nil
@@ -252,7 +261,7 @@ module HubSsoLib
     # head end. We need to be able to decrypt in the absence of any other
     # information. A fixed passphrase thus needs to be used, but it cannot be
     # included in the source code or anyone can read the cookie contents! To
-    # work around this, transform the passphrase into 32 bytes of data from
+    # work around this, transform the passphrase into 16 bytes of data from
     # the random pool if asked. The random pool is not known to the outside
     # world so security is improved (albeit far from perfect, but this is all
     # part of little more than an anti-spam measure - not Fort Knox!).
@@ -264,14 +273,14 @@ module HubSsoLib
       # off the top bits (since we've no more reason to believe that the top
       # bits contain more randomly varying data than the bottom bits) so that
       # the number is bound to between zero and the random pool size, minus
-      # 33, thus providing an offset into the file from which we can safely
-      # read 32 bytes of data.
+      # 16, thus providing an offset into the file from which we can safely
+      # read 16 bytes of data.
 
-      offset = Digest::MD5.hexdigest(passphrase).hex % (HubSsoLib::HUBSSOLIB_RANDOM_DATA_SIZE - 32)
+      offset = Digest::MD5.hexdigest(passphrase).hex % (HubSsoLib::HUBSSOLIB_RANDOM_DATA_SIZE - 16)
 
       # Return 32 bytes of data from the random pool at the calculated offset.
 
-      return HubSsoLib::HUBSSOLIB_RANDOM_DATA[offset..offset + 31]
+      return HubSsoLib::HUBSSOLIB_RANDOM_DATA[offset..offset + 15]
     end
 
   private
@@ -932,7 +941,7 @@ module HubSsoLib
     # 'true' if not redirected (already HTTPS), else 'false'.
     #
     def hubssolib_ensure_https
-      unless request.ssl?
+      unless request.ssl? || ENV['RAILS_ENV'] == 'development'
         # This isn't reliable: redirect_to({ :protocol => 'https://' })
         redirect_to (hubssolib_promote_uri_to_ssl(request.request_uri, request.host))
         return false
