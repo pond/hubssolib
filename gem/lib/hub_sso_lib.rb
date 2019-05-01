@@ -1007,9 +1007,10 @@ module HubSsoLib
     # the cross-application and standard standard flash hashes.
     #
     def hubssolib_flash_tags
+
       # These known key values are used to guarantee an order in the output
       # for cases where multiple messages are defined.
-
+      #
       tags  = hubssolib_flash_tag(:notice)    <<
               hubssolib_flash_tag(:attention) <<
               hubssolib_flash_tag(:alert)
@@ -1019,7 +1020,7 @@ module HubSsoLib
               hubssolib_standard_flash_tag(:alert)
 
       # Now pick up anything else.
-
+      #
       hubssolib_get_flash.each do |key, value|
         tags << hubssolib_flash_tag(key) if (value and !value.empty?)
       end
@@ -1200,7 +1201,7 @@ module HubSsoLib
 
       return hubssolib_factory().get_session(key)
 
-    rescue Exception => e
+    # rescue Exception => e
 
       # At this point there tends to be no Session data, so we're
       # going to have to encode the exception data into the URI...
