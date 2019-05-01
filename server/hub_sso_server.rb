@@ -1,6 +1,6 @@
 #######################################################################
 # Server:  hub_sso_server.rb                                          #
-#          (C) Hipposoft 2006-2011                                    #
+#          (C) Hipposoft 2006-2019                                    #
 #                                                                     #
 # Purpose: Cross-application same domain single sign-on support:      #
 #          RAM cache based authorisation server, a DRb server that    #

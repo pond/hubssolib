@@ -1,6 +1,6 @@
 #######################################################################
 # Module:  HubSsoLib                                                  #
-#          (C) Hipposoft 2006                                         #
+#          (C) Hipposoft 2006-2019                                    #
 #                                                                     #
 # Purpose: Cross-application same domain single sign-on support.      #
 #                                                                     #
@@ -12,6 +12,7 @@
 #                             path come from environment variables.   #
 #          09-Mar-2011 (ADH): Updated for Hub on Rails 2.3.11 along   #
 #                             with several important bug fixes.       #
+#          01-May-2019 (ADH): Updated for Ruby 2.5.3.                 #
 #######################################################################
 
 module HubSsoLib
@@ -1201,7 +1202,7 @@ module HubSsoLib
 
       return hubssolib_factory().get_session(key)
 
-    # rescue Exception => e
+    rescue Exception => e
 
       # At this point there tends to be no Session data, so we're
       # going to have to encode the exception data into the URI...
