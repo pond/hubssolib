@@ -1,0 +1,15 @@
+          <h2>Secure services failure</h2>
+
+          <p />
+          We are sorry, but secure services on the <%= INSTITUTION_NAME_LONG %> web site are
+          not available at the moment due to a service failure on our web server.
+          We are able to show you this page, but little else over HTTPS.
+
+          <p />
+          The secure site should be running again shortly. Please try again in a
+          few minutes. If the fault persists, please consider contacting <%= INSTITUTION_NAME_LONG %> at
+          <tt><%= mail_to( EMAIL_ADMIN ) %></tt>
+          as we may not be aware of the failure. Thanks for your patience!
+
+          <p />
+          <%= exception_info %>

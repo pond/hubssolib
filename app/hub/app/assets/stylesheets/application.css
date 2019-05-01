@@ -1,0 +1,134 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, or any plugin's
+ * vendor/assets/stylesheets directory can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the bottom of the
+ * compiled file so the styles you add here take precedence over styles defined in any other CSS/SCSS
+ * files in this directory. Styles in this file should be added after the last require_* statement.
+ * It is generally better to create a new file per style scope.
+ *
+ *= require_tree .
+ *= require_self
+ */
+
+/* Hub stylesheet.
+ *
+ * Very distantly based on the Collaboa default stylesheet.
+ */
+
+/* Account listings */
+
+table.list
+{
+  border-collapse: collapse;
+  border: 1px solid #6E915E;
+}
+
+table.list tr.odd
+{
+  background-color: #f8fff8;
+}
+
+table.list td.yes
+{
+  background-color: #DFD;
+  text-align: center;
+}
+
+table.list td.no
+{
+  background-color: #FDB;
+  text-align: center;
+}
+
+table.list td.expired
+{
+  background-color: #FDD;
+  text-align: center;
+}
+
+table.list td.actions
+{
+  background-color: #DDD;
+  text-align: center;
+}
+
+/* Button-based dangerous action links */
+
+table td.dangerous img,
+table td.dangerous input[type='image']
+{
+  border: 2px solid #966;
+  background: #fee;
+  margin: 1px;
+}
+
+form.button-to input
+{
+  margin-top: 4px;
+}
+
+table.list form.button-to input
+{
+  font-size: 80%;
+  margin-top: 4px;
+  width: 100%;
+}
+
+table td input[type='image']
+{
+  border: none;
+  background: inherit;
+}
+
+/* Icon-based buttons */
+
+div.content a.image,
+div.content a.image:hover
+{
+  background: inherit;
+  border: none;
+}
+
+/* Paginated navigation */
+
+p.paginator
+{
+  font-size: small;
+  font-weight: bold;
+}
+
+p.paginator span.disabled
+{
+  color: #bbb;
+}
+
+/* Exception handling */
+
+div.exception
+{
+  border: 1px solid #aaa;
+  background: #eee;
+  padding: 10px;
+  color: #A77;
+  font-size: 90%
+}
+
+div.exception p
+{
+  margin: 0;
+  padding: 0;
+}
+
+/*****************************************************************************\
+ * Browser-specific styles: Google reCaptcha bugs - the 'noscript' version is
+ * pretty badly broken.
+\*****************************************************************************/
+
+noscript textarea#g-recaptcha-response
+{
+  display: none;
+}

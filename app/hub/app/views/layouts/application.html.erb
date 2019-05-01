@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <%= csrf_meta_tags %>
+
+    <link type="text/css" rel="stylesheet" href="/css/risc_os_open_2011.css" media="all" />
+    <%= stylesheet_link_tag 'application', :media => :all %>
+
+    <title><%= INSTITUTION_NAME_LONG %>: Single sign-on: <%= @title %></title>
+  </head>
+  <body>
+<%= render 'shared/fixed_header' %>
+
+    <div id="template_main">
+
+      <!-- Main body content -->
+
+      <div id="template_body">
+        <div id="template_body_content">
+          <%= hubssolib_flash_tags unless @service_fault -%>
+
+          <div class="content">
+<%= yield %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+
+      <div id="template_sidebar">
+        <div id="template_sidebar_content">
+          <div class="template_sidebar_node">
+            <h3>Search whole site</h3>
+
+            <p />
+            <form action="https://www.google.com/search" method="get" class="searchform">
+              <input type="hidden" name="num"           value="10" />
+              <input type="hidden" name="hl"            value="en" />
+              <input type="hidden" name="as_sitesearch" value="www.riscosopen.org" />
+              <input type="text" value="" maxlength="256" size="15" name="q" id="q" />
+              <b><input type="submit" value="Go" name="btnG" /></b>
+            </form>
+          </div>
+
+          <p />
+<%= render 'shared/fixed_sidebar' %>
+
+        </div>
+      </div>
+
+      <div id="template_main_block_end"></div>
+    </div>
+
+<%= render 'shared/fixed_footer' %>
+  </body>
+</html>
