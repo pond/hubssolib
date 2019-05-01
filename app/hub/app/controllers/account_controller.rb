@@ -12,7 +12,7 @@
 
 class AccountController < ApplicationController
 
-  layout 'default.html.erb'
+  layout 'application'
 
   # Cache the logged in and out PNG images in RAM; they're only small.
 
@@ -44,6 +44,9 @@ class AccountController < ApplicationController
   # very confusing to be on an HTTP page, apparently fetching the indicator by
   # HTTP, only to have the image fetch quietly redirect behind the scenes, go
   # to HTTPS, and say you're logged in - when everyone else thinks you're not.
+
+  require 'hub_sso_lib'
+  include HubSsoLib::Core
 
   before_action :hubssolib_ensure_https, :except => :login_indication
 
@@ -84,10 +87,6 @@ class AccountController < ApplicationController
   def signup
     @title = 'Sign up'
     return unless request.post?
-
-    # Bulk assignment from the params hash is safe because the User object
-    # contains nothing that won't be overwritten anyway or isn't already
-    # protected by attr_accessible in the User model.
 
     @user = User.new(params[:user])
 
@@ -543,5 +542,9 @@ protected
       :alert,
       'The new password differed from the password confirmation you entered.'
     )
+  end
+  
+  def allowed_params
+    params.require(:user).permit(:email, :real_name, :password, :password_confirmation)
   end
 end

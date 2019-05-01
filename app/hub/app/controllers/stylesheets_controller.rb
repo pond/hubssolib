@@ -11,7 +11,6 @@
 
 class StylesheetsController < ApplicationController
 
-  skip_before_action :hubssolib_login_required
   skip_before_action :hubssolib_beforehand
   skip_after_action  :hubssolib_afterwards
 

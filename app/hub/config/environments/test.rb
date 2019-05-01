@@ -1,4 +1,4 @@
-# See "config/initializers/50_general_settings.rb".
+# See "config/application.rb".
 #
 EMAIL_ADMIN      = 'example@test.com'
 RESET_TIME_LIMIT = 2 * 24 * 60 * 60

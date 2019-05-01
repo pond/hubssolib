@@ -7,14 +7,6 @@ class User < ActiveRecord::Base
   # Virtual attribute for the unencrypted password
   attr_accessor :password
 
-  # Stop mass-assignment of the User model when we do something like
-  # "@user = User.new(params[:user])" in the Controller. Someone could
-  # build a form which submitted any value for all columns in the User
-  # table without this - e.g. they could assign "admin" to "roles".
-  # The line below states which attributes are accessible to mass
-  # assignment - everything else must be explicitly assigned.
-  attr_accessible :email, :real_name, :password, :password_confirmation
-
   validates_presence_of     :email, :real_name
   validates_presence_of     :password,                   :if => :password_required?
   validates_presence_of     :password_confirmation,      :if => :password_required?

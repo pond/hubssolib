@@ -1,4 +1,4 @@
-class AddPasswordResetCode < ActiveRecord::Migration
+class AddPasswordResetCode < ActiveRecord::Migration[5.2]
   def self.up
     add_column "users", "password_reset_code", :string, :limit => 40
     add_column "users", "password_reset_code_expires_at", :datetime

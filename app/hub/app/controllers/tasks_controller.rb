@@ -11,9 +11,8 @@
 
 class TasksController < ApplicationController
   helper :Tasks
-  layout 'default.html.erb'
+  layout 'application'
 
-  skip_before_action :hubssolib_login_required
   skip_before_action :hubssolib_beforehand, :only => :service
   skip_after_action  :hubssolib_afterwards, :only => :service
 

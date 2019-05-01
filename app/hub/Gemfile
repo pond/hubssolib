@@ -8,6 +8,7 @@ gem 'tzinfo-data'
 gem 'will_paginate', '~> 3.0'
 gem 'hubssolib',     '~> 1.0.0', :require => 'hub_sso_lib'
 gem "recaptcha",                 :require => "recaptcha/rails"
+gem 'rails-observers'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.2.3'

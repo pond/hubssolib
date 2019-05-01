@@ -12,6 +12,23 @@ domain single sign-on solutions such as OpenID, wherein a user will typically
 have to sign in to domain individually, but is at least able to do so using a
 single set of identifying credentials.
 
+## Installation
+
+Use `bundler` to install gem dependencies:
+
+```
+bundle install
+```
+
+## Database setup
+
+Use the migrations rather than schema:
+
+```
+bundle exec rake db:create
+bundle exec rake db:migrate
+```
+
 ## Further reading
 
 For more information about Hub, please see:

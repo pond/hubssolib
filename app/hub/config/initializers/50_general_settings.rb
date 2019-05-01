@@ -24,19 +24,6 @@
 INSTITUTION_NAME_LONG  = "RISC OS Open"
 INSTITUTION_NAME_SHORT = "ROOL"
 
-# Administrator e-mail address to use as the 'From' address in account
-# notification e-mail messages, for development and production respectively.
-#
-EMAIL_ADMIN_DEVELOPMENT = 'info@riscosopen.org'
-EMAIL_ADMIN_PRODUCTION  = 'info@riscosopen.org'
-
-# Time limit, *in seconds*, for password reset e-mail codes in development
-# and production respectively. Codes persist in the database indefinitely
-# but will be rejected if too old when someone tries to use one.
-#
-RESET_TIME_LIMIT_DEVELOPMENT = 2 * 24 * 60 * 60
-RESET_TIME_LIMIT_PRODUCTION  = 2 * 24 * 60 * 60
-
 # Maximum number of items to show per page in sortable list views.
 
 MAXIMUM_LIST_ITEMS_PER_PAGE = 25

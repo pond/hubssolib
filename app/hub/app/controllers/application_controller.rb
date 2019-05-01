@@ -17,8 +17,6 @@ class ApplicationController < ActionController::Base
 
   before_action :set_email_host
 
-  # Hub single sign-on support
-
   require 'hub_sso_lib'
   include HubSsoLib::Core
 

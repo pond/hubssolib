@@ -1,4 +1,4 @@
-# See "config/initializers/50_general_settings.rb".
+# See "config/application.rb".
 #
 EMAIL_ADMIN      = EMAIL_ADMIN_DEVELOPMENT
 RESET_TIME_LIMIT = RESET_TIME_LIMIT_DEVELOPMENT
