@@ -23,8 +23,8 @@ module ApplicationHelper
                      {:controller => controller, :action => action}, :class => 'image')
 
       unless (text.nil? or text.empty?)
-        html << '<br />'
-        html << link_to(text, :controller => controller, :action => action)
+        html << '<br />'.html_safe
+        html << link_to(text.html_safe, :controller => controller, :action => action)
       end
 
     else
@@ -32,8 +32,8 @@ module ApplicationHelper
       html = content_tag("a", image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
                          { :href => uri, :class => 'image' })
       unless (text.nil? or text.empty?)
-        html << '<br />'
-        html << content_tag("a", text, { :href => uri })
+        html << '<br />'.html_safe
+        html << content_tag("a", text.html_safe, { :href => uri })
       end
 
     end

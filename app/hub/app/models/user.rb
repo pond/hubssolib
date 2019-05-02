@@ -20,7 +20,7 @@ class User < ActiveRecord::Base
   # Authenticates a user by e-mail address and unencrypted password.  Returns the user or nil.
   def self.authenticate(email, password)
     # hide records with a nil activated_at
-    u = find :first, :conditions => ['LOWER(email) = ? and activated_at IS NOT NULL', email.downcase]
+    u = self.where(['LOWER(email) = ? and activated_at IS NOT NULL', email.downcase]).first
     u && u.authenticated?(password) ? u : nil
   end
 

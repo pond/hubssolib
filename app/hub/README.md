@@ -29,6 +29,15 @@ bundle exec rake db:create
 bundle exec rake db:migrate
 ```
 
+## Running
+
+You need to set Recaptcha credentials via environment variables, so for example you could use:
+
+```
+RECAPTCHA_SITE_KEY="..." RECAPTCHA_SECRET_KEY="..." bundle exec rails s
+```
+
+
 ## Further reading
 
 For more information about Hub, please see:

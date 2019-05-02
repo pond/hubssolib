@@ -9,9 +9,9 @@
         process is followed for any new e-mail address.
 
         <p />
-        <%= error_messages_for :user %>
+        <%= render "shared/error_messages", :target => @user %>
 
-        <% form_tag do %>
+        <%= form_tag do %>
           <p />
           <table class="list" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
             <tr>

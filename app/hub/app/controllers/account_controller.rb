@@ -16,8 +16,8 @@ class AccountController < ApplicationController
 
   # Cache the logged in and out PNG images in RAM; they're only small.
 
-  @@logged_in_image  = File.read("#{RAILS_ROOT}/public/images/icons/logged_in.png")
-  @@logged_out_image = File.read("#{RAILS_ROOT}/public/images/icons/logged_out.png")
+  @@logged_in_image  = File.read("#{Rails.root}/app/assets/images/icons/logged_in.png")
+  @@logged_out_image = File.read("#{Rails.root}/app/assets/images/icons/logged_out.png")
 
   # Action permissions for this class as a class variable, exposed
   # to the public through a class method.
@@ -543,7 +543,7 @@ protected
       'The new password differed from the password confirmation you entered.'
     )
   end
-  
+
   def allowed_params
     params.require(:user).permit(:email, :real_name, :password, :password_confirmation)
   end
