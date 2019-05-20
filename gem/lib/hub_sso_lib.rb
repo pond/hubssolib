@@ -985,7 +985,7 @@ module HubSsoLib
 
       if (value)
         hubssolib_set_flash(key, nil)
-        return "<h2 align=\"left\" class=\"#{key}\">#{value}</h2><p />"
+        return "<h2 align=\"left\" class=\"#{key}\">#{h(value)}</h2><p />".html_safe()
       else
         return ''
       end
@@ -998,7 +998,7 @@ module HubSsoLib
 
       if (value)
         flash.delete(key)
-        return "<h2 align=\"left\" class=\"#{key}\">#{value}</h2><p />"
+        return "<h2 align=\"left\" class=\"#{key}\">#{h(value)}</h2><p />".html_safe()
       else
         return ''
       end
@@ -1030,7 +1030,7 @@ module HubSsoLib
         tags << hubssolib_standard_flash_tag(key) if (value and !value.empty?)
       end if defined?(flash)
 
-      return tags
+      return tags.html_safe
     end
 
     # Retrieve the message of an exception stored as an object in the given
@@ -1190,7 +1190,7 @@ module HubSsoLib
     def hubssolib_get_session_data
 
       # If we're not using SSL, forget it
-      return nil unless request.ssl?
+      return nil unless request.ssl? || ( ( ! Rails.env.production? ) rescue false )
 
       # If we've no cookie, we need a new session ID
       key = hubssolib_get_secure_cookie_data(HUBSSOLIB_COOKIE_NAME)
