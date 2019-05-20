@@ -5,9 +5,9 @@ module AccountHelper
   #
   def boolean_cell(value)
     if (value)
-      '<td class="yes">Yes</td>'
+      content_tag( :td, :class => 'yes' ) { 'Yes' }
     else
-      '<td class="no">No</td>'
+      content_tag( :td, :class => 'no' ) { 'No' }
     end
   end
 
@@ -18,12 +18,12 @@ module AccountHelper
   def expired_cell(value)
     if (value)
       if (Time.now.utc >= value)
-        '<td class="expired">Expired</td>'
+        content_tag( :td, :class => 'expired' ) { 'Expired' }
       else
-        '<td class="yes">Yes</td>'
+        content_tag( :td, :class => 'yes' ) { 'Yes' }
       end
     else
-      '<td class="no">No</td>'
+      content_tag( :td, :class => 'no' ) { 'No' }
     end
   end
 
@@ -32,10 +32,14 @@ module AccountHelper
   # object for which the actions should be generated.
   #
   def list_actions(user)
-    '<td class="actions">' <<
-    button_to('Details',    { :action => 'show',       :id => user.id }) <<
-    button_to('Delete',     { :action => 'destroy',    :id => user.id }, :confirm => "Are you absolutely sure you want to permanently delete this account?") <<
-    '</td>'
+    content_tag( :td, :class => 'actions' ) do
+      concat(
+        button_to('Details', { :action => 'show',    :id => user.id })
+      )
+      concat(
+        button_to('Delete',  { :action => 'destroy', :id => user.id }, :confirm => "Are you absolutely sure you want to permanently delete this account?")
+      )
+    end
   end
 
   # Output a selection list for roles. Pass the name of the parent
@@ -44,7 +48,7 @@ module AccountHelper
   # string. Must be followed by a code block that translates its given
   # argument into a printable string for the selection menu. Multiple
   # selections will be allowed.
-
+  #
   def create_roles_selector(name, field, values, roles)
     roles = roles.to_authenticated_roles
     str   = "<select multiple name=\"%s[%s][]\" id=\"%s_%s\">\n" % [ name, field, name, field ]

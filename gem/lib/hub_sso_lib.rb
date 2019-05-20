@@ -964,7 +964,7 @@ module HubSsoLib
     def hubssolib_set_flash(symbol, message)
       return unless self.hubssolib_current_session
       f = hubssolib_get_flash
-      f[symbol] = message
+      f[symbol.to_s] = message
       self.hubssolib_current_session.session_flash = f
     end
 
@@ -973,64 +973,48 @@ module HubSsoLib
       self.hubssolib_current_session.session_flash = {}
     end
 
-    # Helper methods to output flash data. It isn't merged into the standard
-    # application flash with a filter because the rather daft and difficult
-    # to manage lifecycle model of the standard flash gets in the way.
+    # Return flash data for known keys, then all remaining keys, from both
+    # the cross-application and standard standard flash hashes. The returned
+    # Hash is of the form:
     #
-    # First, return tags for a flash using the given key, clearing the
-    # result in the flash hash now it has been used.
+    #   { 'hub' => ...data..., 'standard' => ...data... }
     #
-    def hubssolib_flash_tag(key)
-      value = hubssolib_get_flash[key]
-
-      if (value)
-        hubssolib_set_flash(key, nil)
-        return "<h2 align=\"left\" class=\"#{key}\">#{h(value)}</h2><p />".html_safe()
-      else
-        return ''
-      end
-    end
-
-    # Next, return tags for a standard application flash using the given key.
+    # ...where "...data..." is itself a Hash of flash keys yielding flash
+    # values. This allows both the Hub and standard flashes to have values
+    # inside them under the same key. All keys are strings.
     #
-    def hubssolib_standard_flash_tag(key)
-      value = flash[key] if defined?(flash)
-
-      if (value)
-        flash.delete(key)
-        return "<h2 align=\"left\" class=\"#{key}\">#{h(value)}</h2><p />".html_safe()
-      else
-        return ''
-      end
-    end
-
-    # Return flash tags for known keys, then all remaining keys, from both
-    # the cross-application and standard standard flash hashes.
-    #
-    def hubssolib_flash_tags
+    def hubssolib_flash_data
 
       # These known key values are used to guarantee an order in the output
       # for cases where multiple messages are defined.
       #
-      tags  = hubssolib_flash_tag(:notice)    <<
-              hubssolib_flash_tag(:attention) <<
-              hubssolib_flash_tag(:alert)
+      compiled_data = { 'hub' => {}, 'standard' => {} }
+      ordered_keys  = [
+        'notice',
+        'attention',
+        'alert'
+      ]
 
-      tags << hubssolib_standard_flash_tag(:notice)    <<
-              hubssolib_standard_flash_tag(:attention) <<
-              hubssolib_standard_flash_tag(:alert)
+      # Get an array of keys for the Hub flash with the ordered key items
+      # first and store data from that flash; same again for standard.
 
-      # Now pick up anything else.
-      #
-      hubssolib_get_flash.each do |key, value|
-        tags << hubssolib_flash_tag(key) if (value and !value.empty?)
+      hash = hubssolib_get_flash()
+      keys = ordered_keys | hash.keys
+
+      keys.each do | key |
+        compiled_data[ 'hub' ][ key ] = hash[ key ] if hash.has_key?( key )
       end
 
-      flash.each do |key, value|
-        tags << hubssolib_standard_flash_tag(key) if (value and !value.empty?)
-      end if defined?(flash)
+      if defined?( flash )
+        hash = flash.to_h()
+        keys = ordered_keys | hash.keys
 
-      return tags.html_safe
+        keys.each do | key |
+          compiled_data[ 'standard' ][ key ] = hash[ key ] if hash.has_key?( key )
+        end
+      end
+
+      return compiled_data
     end
 
     # Retrieve the message of an exception stored as an object in the given
@@ -1050,7 +1034,7 @@ module HubSsoLib
                 :hubssolib_logged_in?,
                 :hubssolib_authorized?,
                 :hubssolib_privileged?,
-                :hubssolib_flash_tags
+                :hubssolib_flash_data
     rescue
       # We're not always included in controllers...
       nil

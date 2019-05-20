@@ -1,6 +1,32 @@
-# Methods added to this helper will be available to all templates in the application.
+require 'hub_sso_lib'
 
 module ApplicationHelper
+
+  # Turn the Hub and Rails flash data into a simple series of H2 entries,
+  # with Hub data first, Rails flash data next. A container DIV will hold
+  # zero or more H2 entries:
+  #
+  #   <div class="flash">
+  #     <h2 class="flash foo">Bar</h2>
+  #   </div>
+  #
+  # ...where "foo" is the flash key, e.g. "alert", "notice" and "Bar" is
+  # the flash value, made HTML-safe.
+  #
+  def apphelp_flash
+    data = hubssolib_flash_data()
+    html = ""
+
+    return content_tag( :div, :class => 'flash' ) do
+      data[ 'hub' ].each do | key, value |
+        concat( content_tag( :h2, :class => "flash #{ key }" ) { value } )
+      end
+
+      data[ 'standard' ].each do | key, value |
+        concat( content_tag( :h2, :class => "flash #{ key }" ) { value } )
+      end
+    end
+  end
 
   # Make a link to the given controller and action, using an image based on the
   # action name of the given width and height. A <br /> tag separates the image

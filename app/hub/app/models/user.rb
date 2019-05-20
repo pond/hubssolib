@@ -1,7 +1,6 @@
 require 'digest/sha1'
 
 class User < ActiveRecord::Base
-  belongs_to :member
   before_create :make_activation_code
 
   # Virtual attribute for the unencrypted password
@@ -43,7 +42,7 @@ class User < ActiveRecord::Base
     @activated = true
     self.activated_at = Time.now.utc
     self.activation_code = nil
-    save(false)
+    save(validate: false)
   end
 
   # Returns true if the user has just been activated.
@@ -57,7 +56,7 @@ class User < ActiveRecord::Base
   def forgot_password
     self.password_reset_code_expires_at = (Time.now.utc) + RESET_TIME_LIMIT
     self.make_password_reset_code
-    save(false)
+    save(validate: false)
     @forgotten_password = true
   end
 
@@ -66,7 +65,7 @@ class User < ActiveRecord::Base
     # reset_password flag to avoid duplicate email notifications.
     self.password_reset_code_expires_at = nil
     self.password_reset_code            = nil
-    save(false)
+    save(validate: false)
     @reset_password = true
   end
 
@@ -83,7 +82,7 @@ class User < ActiveRecord::Base
   end
 
   def destroy
-    UserNotifier.deliver_destruction(self)
+    UserMailer.with(user: self).destruction().deliver_later()
     super
   end
 

@@ -88,10 +88,10 @@ class AccountController < ApplicationController
     @title = 'Sign up'
     return unless request.post?
 
-    @user = User.new(params[:user])
+    @user = User.new(allowed_user_params())
 
     if ( @user.email.downcase.ends_with?( '.kr' ) || @user.email.downcase.ends_with?( '.cn' ) )
-      hubssolib_set_flash(:attention, 'Due to overwhelming spam volumes from some locations, self-signups for those locations are blocked. Please contact ROOL for assistence.')
+      hubssolib_set_flash(:attention, 'Due to overwhelming spam volumes from some locations, self-signups for those locations are blocked. Please contact ROOL for assistance.')
       redirect_to :controller => 'tasks', :action => nil
       return
     end
@@ -544,7 +544,7 @@ protected
     )
   end
 
-  def allowed_params
+  def allowed_user_params
     params.require(:user).permit(:email, :real_name, :password, :password_confirmation)
   end
 end
