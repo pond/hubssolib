@@ -5,7 +5,7 @@
           database access would be needed to reassign the administrative roles.
 
           <p />
-          <%= form_tag do %>
+          <%= form_for( @user, :method => 'post', :url => url_for( :controller => 'account', :action => 'edit_roles' ) ) do | form |%>
             <table class="list" border="1" align="center" cellspacing="1" cellpadding="4">
               <tr valign="top">
                 <th bgcolor="#eeeeee">Address</th>
@@ -18,10 +18,7 @@
               <tr valign="top">
                 <th bgcolor="#eeeeee">Roles</th>
                 <td align="center">
-                  <%= create_roles_selector('user',
-                                            'roles',
-                                            HubSsoLib::Roles.get_role_symbols,
-                                            @user.roles) { |symbol| HubSsoLib::Roles.get_display_name(symbol) } -%>
+                  <%= create_roles_selector( form, @user ) %>
                 </td>
               </tr>
             </table>

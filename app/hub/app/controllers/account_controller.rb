@@ -10,6 +10,8 @@
 #                             not recorded.                           #
 #######################################################################
 
+require 'will_paginate/array'
+
 class AccountController < ApplicationController
 
   layout 'application'
@@ -124,7 +126,7 @@ class AccountController < ApplicationController
       begin
         success = verify_recaptcha(
           :model   => @user,
-          :message => "The reCaptcha challenge wasn't happy with the response. Please try again or contact RISC OS Open for assistance."
+          :message => "The reCaptcha challenge wasn't happy with the response. Please try again or contact #{ INSTITUTION_NAME_LONG } for assistance."
         )
       rescue => e
         Rails.logger.error(e.inspect)
@@ -328,9 +330,10 @@ class AccountController < ApplicationController
       per_page = 20
     end
 
-    @users = User.paginate :page     => page,
-                           :per_page => per_page,
-                           :order    => 'created_at DESC'
+    @users = User.paginate(
+      :page     => page,
+      :per_page => per_page
+    ).order( 'created_at DESC' )
   end
 
   # Enumerate active users (those users known to the DRb server).
@@ -343,7 +346,8 @@ class AccountController < ApplicationController
     # Map the user objects returned from the HubSsoLib Gem to
     # internal users.
 
-    @users.map! { |user| to_real_user(user) }
+    @users.map! { |user| to_real_user(user, true) }
+    @users.compact!
 
     # Page number zero is magic; it indicates "all items".
 
@@ -355,9 +359,11 @@ class AccountController < ApplicationController
       per_page = 20
     end
 
-    @users = @users.paginate :page     => page,
-                             :per_page => per_page,
-                             :order    => 'created_at DESC'
+    @users.sort! { | x, y | y.created_at <=> x.created_at }
+    @users = @users.paginate(
+      :page     => page,
+      :per_page => per_page
+    )
   end
 
   # Show details of a specific user account.
@@ -386,27 +392,37 @@ class AccountController < ApplicationController
 
     # Validate the result
 
-    roles = (params[:user] ? params[:user][:roles] : '').to_authenticated_roles
+    roles = (params[:user] ? params[:user][:roles_array] : '').to_authenticated_roles
 
     unless (roles.validate)
       hubssolib_set_flash(
         :alert,
-        'Invalid roles chosen. ' <<
-        'At least one item in the list must be selected.'
+        'At least one role must be chosen from the list.'
       )
-    else
-      @user.roles = roles.to_s
-      @user.save!
 
-      # Did I update my own roles?
-
-      if (hubssolib_get_user_id == @user.id)
-        self.hubssolib_current_user = from_real_user(@user)
-      end
-
-      hubssolib_set_flash(:notice, 'Account roles updated successfully.')
-      redirect_to :action => 'show', :id => @user.id
+      return # NOTE EARLY EXIT
     end
+
+    editing_own_roles = (hubssolib_get_user_id == @user.id)
+
+    if (editing_own_roles && ! roles.include?(:admin))
+      hubssolib_set_flash(
+        :alert,
+        'You cannot revoke your own administrator privileges. Create a new administrator account first, then use it to revoke permissions from your old account.'
+      )
+
+      return # NOTE EARLY EXIT
+    end
+
+    @user.roles = roles.to_s
+    @user.save!
+
+    if (editing_own_roles)
+      self.hubssolib_current_user = from_real_user(@user)
+    end
+
+    hubssolib_set_flash(:notice, 'Account roles updated successfully.')
+    redirect_to :action => 'show', :id => @user.id
   end
 
   def destroy
@@ -473,16 +489,23 @@ class AccountController < ApplicationController
 protected
 
   # Pass a HubSsoLib::User object. Returns an equivalent User Model object.
+  # If the optional second parameter is 'true' (default 'false'), a failure
+  # to find a user in the local database results in 'nil' being returned;
+  # otherwise an exception is thrown.
   #
-  def to_real_user(user)
+  def to_real_user(user, allow_nil = false)
     return nil if user.nil?
     raise 'Incorrect argument class' unless (user.class == HubSsoLib::User or user.class == DRbObject)
 
     # Unpleasant "user_" prefix in HubSsoLib::User field names is to avoid
     # collisions (e.g. of "id") with DRbObject.
 
-    real_user = User.find(user.user_id)
-    raise 'No equivalent real user' unless real_user
+    real_user = User.find_by_id(user.user_id)
+
+    unless real_user
+      raise 'No equivalent real user' if allow_nil == false
+      return nil
+    end
 
     real_user.activated_at                   = Time.zone.parse(user.user_activated_at)
     real_user.activation_code                =                 user.user_activation_code

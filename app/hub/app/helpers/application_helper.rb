@@ -17,13 +17,13 @@ module ApplicationHelper
     data = hubssolib_flash_data()
     html = ""
 
-    return content_tag( :div, :class => 'flash' ) do
+    return tag.div( :class => 'flash' ) do
       data[ 'hub' ].each do | key, value |
-        concat( content_tag( :h2, :class => "flash #{ key }" ) { value } )
+        concat( tag.h2( value, :class => "flash #{ key }" ) )
       end
 
       data[ 'standard' ].each do | key, value |
-        concat( content_tag( :h2, :class => "flash #{ key }" ) { value } )
+        concat( tag.h2( value, :class => "flash #{ key }" ) )
       end
     end
   end
@@ -49,7 +49,7 @@ module ApplicationHelper
                      {:controller => controller, :action => action}, :class => 'image')
 
       unless (text.nil? or text.empty?)
-        html << '<br />'.html_safe
+        html << tag('br')
         html << link_to(text.html_safe, :controller => controller, :action => action)
       end
 
@@ -58,7 +58,7 @@ module ApplicationHelper
       html = content_tag("a", image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
                          { :href => uri, :class => 'image' })
       unless (text.nil? or text.empty?)
-        html << '<br />'.html_safe
+        html << tag('br')
         html << content_tag("a", text.html_safe, { :href => uri })
       end
 
@@ -88,11 +88,11 @@ module ApplicationHelper
     end
 
     html = form_tag({:controller => controller, :action => action, :id => id})
-    html << tag('input', opts)
-    html << '</form>'
+    html << tag.input(opts)
+    html << '</form>'.html_safe()
 
     unless (text.nil? or text.empty?)
-      html << text
+      html << text.html_safe
     end
 
     return html

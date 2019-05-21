@@ -5,9 +5,9 @@ module AccountHelper
   #
   def boolean_cell(value)
     if (value)
-      content_tag( :td, :class => 'yes' ) { 'Yes' }
+      tag.td( 'Yes', :class => 'yes' )
     else
-      content_tag( :td, :class => 'no' ) { 'No' }
+      tag.td( 'No', :class => 'no' )
     end
   end
 
@@ -15,15 +15,15 @@ module AccountHelper
   # 'Yes', 'No' or 'Expired' according to whether or not the given value is
   # set and less than "Time.now.utc".
   #
-  def expired_cell(value)
-    if (value)
+  def expired_cell( value )
+    if ( value )
       if (Time.now.utc >= value)
-        content_tag( :td, :class => 'expired' ) { 'Expired' }
+        tag.td( 'Expired', :class => 'expired' )
       else
-        content_tag( :td, :class => 'yes' ) { 'Yes' }
+        tag.td( 'Yes', :class => 'yes' )
       end
     else
-      content_tag( :td, :class => 'no' ) { 'No' }
+      tag.td( 'No', :class => 'no' )
     end
   end
 
@@ -31,8 +31,8 @@ module AccountHelper
   # of user accounts. The cell will have class name 'actions'. Pass the user
   # object for which the actions should be generated.
   #
-  def list_actions(user)
-    content_tag( :td, :class => 'actions' ) do
+  def list_actions( user )
+    tag.td( :class => 'actions' ) do
       concat(
         button_to('Details', { :action => 'show',    :id => user.id })
       )
@@ -42,27 +42,19 @@ module AccountHelper
     end
   end
 
-  # Output a selection list for roles. Pass the name of the parent
-  # object, the name of the field to take the selected value, an array
-  # of option values for the selection list and the associated roles
-  # string. Must be followed by a code block that translates its given
-  # argument into a printable string for the selection menu. Multiple
-  # selections will be allowed.
+  # Output a selection list for roles. Pass a form object, from e.g. the
+  # likes of "form_for( @user ) do | form | ... end" and the target User.
+  # Its "roles" attribute is deserialised to an array in passing.
   #
-  def create_roles_selector(name, field, values, roles)
-    roles = roles.to_authenticated_roles
-    str   = "<select multiple name=\"%s[%s][]\" id=\"%s_%s\">\n" % [ name, field, name, field ]
+  def create_roles_selector( form, user )
+    role_names = HubSsoLib::Roles.get_role_symbols()
 
-    for value in values
-      str += '                <option value="%s"' % value
-      str += ' selected' if (roles.include? value)
-      str += '>' + yield(value) # Call the code block the caller set up
-      str += "</option>\n"
-    end
-
-    str += "              </select>\n"
-
-    return str
+    form.select(
+      'roles_array',
+      role_names.map { | role_name | [ HubSsoLib::Roles.get_display_name( role_name ), role_name ] },
+      { :include_hidden => false },
+      { :multiple => true }
+    )
   end
 
 end

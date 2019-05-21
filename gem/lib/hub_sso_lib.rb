@@ -1014,6 +1014,9 @@ module HubSsoLib
         end
       end
 
+      hubssolib_clear_flash()
+      flash.discard()
+
       return compiled_data
     end
 
@@ -1041,6 +1044,12 @@ module HubSsoLib
     end
 
   private
+
+    # Helper that decides if we should insist on SSL (or not).
+    #
+    def hubssolib_no_ssl?
+      ( ! Rails.env.production? ) rescue false
+    end
 
     # Indicate that the user must log in to complete their request.
     # Returns false to enable a before_filter to return through this
@@ -1133,7 +1142,7 @@ module HubSsoLib
       cookies[name] = {
                         :value  => data,
                         :path   => HUBSSOLIB_COOKIE_PATH,
-                        :secure => true
+                        :secure => ! hubssolib_no_ssl?
                       }
     end
 
@@ -1174,7 +1183,7 @@ module HubSsoLib
     def hubssolib_get_session_data
 
       # If we're not using SSL, forget it
-      return nil unless request.ssl? || ( ( ! Rails.env.production? ) rescue false )
+      return nil unless request.ssl? || hubssolib_no_ssl?
 
       # If we've no cookie, we need a new session ID
       key = hubssolib_get_secure_cookie_data(HUBSSOLIB_COOKIE_NAME)

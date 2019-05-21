@@ -16,6 +16,14 @@ class User < ActiveRecord::Base
   validates_uniqueness_of   :email, :case_sensitive => false
   before_save :encrypt_password
 
+  def roles_array
+    self.roles.to_authenticated_roles.to_a
+  end
+
+  def roles_array=(array)
+    self.roles = roles.join(',')
+  end
+
   # Authenticates a user by e-mail address and unencrypted password.  Returns the user or nil.
   def self.authenticate(email, password)
     # hide records with a nil activated_at

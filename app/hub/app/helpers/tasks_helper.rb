@@ -11,14 +11,14 @@
 
 module TasksHelper
   def exception_info
-    data = '<div class="exception">'
+    data = '<div class="exception">'.html_safe()
 
     if (defined?(@exception_data) && @exception_data && !@exception_data.empty?)
-      data << "<p /><b>Technical data:</b><p /><tt>#{h(@exception_data)}</tt>"
+      data << "<p /><b>Technical data:</b><p /><tt>#{h(@exception_data)}</tt>".html_safe()
     else
-      data << "<p />Further technical information on this failure is not available."
+      data << "<p />Further technical information on this failure is not available.".html_safe()
     end
 
-    return data + '</div>'
+    return data + '</div>'.html_safe()
   end
 end
