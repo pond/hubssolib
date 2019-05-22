@@ -60,6 +60,10 @@ module HubSsoLib
     end
   end
 
+  # Thread safety.
+
+  HUBSSOLIB_MUTEX = Mutex.new
+
   #######################################################################
   # Class:   Crypto                                                     #
   #          (C) Hipposoft 2006                                         #
@@ -102,18 +106,6 @@ module HubSsoLib
     require 'digest/md5'
     require 'securerandom'
     require 'base64'
-
-    # # Initialize the HubSsoLib::Crypto object.
-    # #
-    # def initialize()
-    #   DRb.start_service()
-    #
-    #   factory   = DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
-    #   @rnd_data = factory.random_data()
-    #   @rnd_size = factory.random_data_size()
-    #
-    #   DRb.stop_service()
-    # end
 
     # Generate a series of pseudo-random bytes of the given length.
     #
@@ -637,10 +629,14 @@ module HubSsoLib
 
   class SessionFactory
     def initialize
+      puts "Session factory: Awaken"
+
       @sessions = {}
     end
 
     def get_session(key)
+      puts "Session factory: Get session #{ key }"
+
       unless (@sessions.has_key? key)
         @sessions[key] = HubSsoLib::Session.new
       end
@@ -649,6 +645,8 @@ module HubSsoLib
     end
 
     def enumerate_sessions
+      puts "Session factory: Enumerate sessions"
+
       @sessions
     end
   end
@@ -671,8 +669,9 @@ module HubSsoLib
 
   module Server
     def hubssolib_launch_server
+      puts "Server: Starting at #{ HUBSSOLIB_DRB_URI }"
       @@session_factory = HubSsoLib::SessionFactory.new
-      DRb.start_service(HUBSSOLIB_DRB_URI, @@session_factory)
+      DRb.start_service(HUBSSOLIB_DRB_URI, @@session_factory, { :safe_level => 1 })
       DRb.thread.join
     end
   end # Server module
@@ -905,7 +904,7 @@ module HubSsoLib
     #
     # We can return to this location by calling #redirect_back_or_default.
     #
-    def hubssolib_store_location(uri_str = request.request_uri)
+    def hubssolib_store_location(uri_str = request.url)
 
       if (uri_str && !uri_str.empty?)
         uri_str = hubssolib_promote_uri_to_ssl(uri_str, request.host) unless request.ssl?
@@ -944,7 +943,7 @@ module HubSsoLib
     def hubssolib_ensure_https
       unless request.ssl? || ENV['RAILS_ENV'] == 'development'
         # This isn't reliable: redirect_to({ :protocol => 'https://' })
-        redirect_to (hubssolib_promote_uri_to_ssl(request.request_uri, request.host))
+        redirect_to (hubssolib_promote_uri_to_ssl(request.url, request.host))
         return false
       else
         return true
@@ -1149,19 +1148,27 @@ module HubSsoLib
     # Establish a single DRb factory connection.
     #
     def hubssolib_factory
+      HUBSSOLIB_MUTEX.synchronize do
 
-      # See:
-      #   http://stackoverflow.com/questions/299219/where-is-the-correct-place-to-initialize-the-drb-service-within-a-rails-applicati
-      #
-      begin
-        DRb.current_server
-      rescue DRb::DRbServerNotFound
-        DRb.start_service
-        # Move to different ThreadGroup to stop Mongrel hang on exit.
-        ThreadGroup.new.add DRb.thread
+        # # See:
+        # #
+        # #   https://stackoverflow.com/a/299742
+        # #
+        # begin
+        #   DRb.current_server
+        # rescue DRb::DRbServerNotFound
+        #   DRb.start_service(HUBSSOLIB_DRB_URI)
+        #   # Move to different ThreadGroup to stop Mongrel hang on exit.
+        #   ThreadGroup.new.add DRb.thread
+        # end
+
+        puts "Client: Existing factory #{ @factory.inspect }"
+        puts "Client: Connecting to #{ HUBSSOLIB_DRB_URI }"
+
+        @factory ||= DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
       end
 
-      return @factory ||= DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
+      return @factory
     end
 
     # Retrieve user data from the DRb server.
@@ -1250,7 +1257,12 @@ module HubSsoLib
     # message.
     #
     def hubssolib_set_exception_data(e)
-      HubSsoLib::Crypto.encode_object(e.message, request.remote_ip)
+      if (Rails.env.development? rescue false)
+        backtrace = e.backtrace.join( ", " )
+        HubSsoLib::Crypto.encode_object("#{ e.message }: #{ backtrace }"[0..511], request.remote_ip)
+      else
+        HubSsoLib::Crypto.encode_object(e.message[0..511], request.remote_ip)
+      end
     end
 
     # Decode exception data encoded with hubssolib_set_exception_data.

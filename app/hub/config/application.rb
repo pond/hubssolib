@@ -43,5 +43,7 @@ module Hub
     config.active_record.default_timezone = :utc
 
     config.active_record.observers = :user_observer
+
+    config.force_ssl = true if Rails.env.production?
   end
 end
