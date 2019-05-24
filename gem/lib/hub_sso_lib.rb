@@ -635,8 +635,6 @@ module HubSsoLib
     end
 
     def get_session(key)
-      puts "Session factory: Get session #{ key }"
-
       unless (@sessions.has_key? key)
         @sessions[key] = HubSsoLib::Session.new
       end
@@ -644,9 +642,7 @@ module HubSsoLib
       return @sessions[key]
     end
 
-    def enumerate_sessions
-      puts "Session factory: Enumerate sessions"
-
+    def enumerate_sessions()
       @sessions
     end
   end
@@ -1149,21 +1145,11 @@ module HubSsoLib
     #
     def hubssolib_factory
       HUBSSOLIB_MUTEX.synchronize do
-
-        # # See:
-        # #
-        # #   https://stackoverflow.com/a/299742
-        # #
-        # begin
-        #   DRb.current_server
-        # rescue DRb::DRbServerNotFound
-        #   DRb.start_service(HUBSSOLIB_DRB_URI)
-        #   # Move to different ThreadGroup to stop Mongrel hang on exit.
-        #   ThreadGroup.new.add DRb.thread
-        # end
-
-        puts "Client: Existing factory #{ @factory.inspect }"
-        puts "Client: Connecting to #{ HUBSSOLIB_DRB_URI }"
+        begin
+          DRb.current_server
+        rescue DRb::DRbServerNotFound
+          DRb.start_service()
+        end
 
         @factory ||= DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
       end
