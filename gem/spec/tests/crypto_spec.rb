@@ -13,7 +13,10 @@ RSpec.describe HubSsoLib::Crypto do
   }
 
   let( :base64_encoded_data ) {
-    "VGhpcyDpIGlzIGEgbG9uZyBzdHJpbmcgb2YgdGhpbmdzIHRoYXQgY2FuIGdldCBxdWl0ZSB3aWRlIGFuZCBlYXNpbHkgZXhjZWVkIDgwIGNoYXJhY3RlcnMgaW4gbGVuZ3RoIGFsdG9nZXRoZXIKd2hpY2ggaXMgYSBnZW5lcmFsIHN0cmluZyBvZiB0aGluZ3MKdGhhdCBoYXMgc29tZSBsaW5lYnJlYWtz"
+    "VGhpcyDpIGlzIGEgbG9uZyBzdHJpbmcgb2YgdGhpbmdzIHRoYXQgY2FuIGdl\n" +
+    "dCBxdWl0ZSB3aWRlIGFuZCBlYXNpbHkgZXhjZWVkIDgwIGNoYXJhY3RlcnMg\n" +
+    "aW4gbGVuZ3RoIGFsdG9nZXRoZXIKd2hpY2ggaXMgYSBnZW5lcmFsIHN0cmlu\n" +
+    "ZyBvZiB0aGluZ3MKdGhhdCBoYXMgc29tZSBsaW5lYnJlYWtz\n"
   }
 
   # https://stackoverflow.com/a/8106054

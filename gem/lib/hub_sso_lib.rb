@@ -28,7 +28,7 @@ module HubSsoLib
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
   # be automatically logged out upon their next action.
-  HUBSSOLIB_IDLE_TIME_LIMIT = 240 * 60
+  HUBSSOLIB_IDLE_TIME_LIMIT = 4 * 60 * 60
 
   # Random file location.
   HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE'] || File.join( ENV['HOME'] || '/', '/.hub_random')
@@ -36,6 +36,11 @@ module HubSsoLib
   # Shared cookie name and path.
   HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
   HUBSSOLIB_COOKIE_PATH = ENV['HUB_COOKIE_PATH']
+
+  # Bypass SSL, for testing purposes? Rails 'production' mode will
+  # insist on SSL otherwise. Development & test environments do not,
+  # so do not need this variable setting.
+  HUBSSOLIB_BYPASS_SSL = ( ENV['HUB_BYPASS_SSL'] == "true" )
 
   # Cache the random data. Assuming FCGI or similar, this code gets
   # executed only once per FCGI instance initialisation rather than
@@ -75,6 +80,7 @@ module HubSsoLib
   # History: 28-Aug-2006 (ADH): First version.                          #
   #          20-Oct-2006 (ADH): Integrated into HubSsoLib, renamed to   #
   #                             'Crypto' from 'HubSsoCrypto'.           #
+  #          01-May-2019 (ADH): Updated for Ruby 2.5.3.                 #
   #######################################################################
 
   # Encryption and decryption utility object. Once instantiated, a
@@ -120,7 +126,7 @@ module HubSsoLib
     # Encode some given data in base-64 format with no line breaks.
     #
     def self.pack64(data)
-      Base64.strict_encode64(data)
+      Base64.encode64(data)
     end
 
     def pack64(data)
@@ -130,7 +136,7 @@ module HubSsoLib
     # Decode some given data from base-64 format with no line breaks.
     #
     def self.unpack64(data)
-      Base64.strict_decode64(data)
+      Base64.decode64(data)
     end
 
     def unpack64(data)
@@ -928,7 +934,7 @@ module HubSsoLib
     def hubssolib_promote_uri_to_ssl(uri_str, host = nil)
       uri = URI.parse(uri_str)
       uri.host = host if host
-      uri.scheme = 'https'
+      uri.scheme = hubssolib_bypass_ssl? ? 'http' : 'https'
       return uri.to_s
     end
 
@@ -937,12 +943,12 @@ module HubSsoLib
     # 'true' if not redirected (already HTTPS), else 'false'.
     #
     def hubssolib_ensure_https
-      unless request.ssl? || ENV['RAILS_ENV'] == 'development'
-        # This isn't reliable: redirect_to({ :protocol => 'https://' })
-        redirect_to (hubssolib_promote_uri_to_ssl(request.url, request.host))
-        return false
-      else
+      if request.ssl? || hubssolib_bypass_ssl?
         return true
+      else
+        # This isn't reliable: redirect_to({ :protocol => 'https://' })
+        redirect_to( hubssolib_promote_uri_to_ssl( request.request_uri, request.host ) )
+        return false
       end
     end
 
@@ -1043,7 +1049,7 @@ module HubSsoLib
     # Helper that decides if we should insist on SSL (or not).
     #
     def hubssolib_no_ssl?
-      ( ! Rails.env.production? ) rescue false
+      HUBSSOLIB_BYPASS_SSL || ( ( ! Rails.env.production? ) rescue false )
     end
 
     # Indicate that the user must log in to complete their request.
@@ -1137,7 +1143,7 @@ module HubSsoLib
       cookies[name] = {
                         :value  => data,
                         :path   => HUBSSOLIB_COOKIE_PATH,
-                        :secure => ! hubssolib_no_ssl?
+                        :secure => ! hubssolib_bypass_ssl?
                       }
     end
 
