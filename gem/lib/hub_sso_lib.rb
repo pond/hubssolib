@@ -1048,7 +1048,7 @@ module HubSsoLib
 
     # Helper that decides if we should insist on SSL (or not).
     #
-    def hubssolib_no_ssl?
+    def hubssolib_bypass_ssl?
       HUBSSOLIB_BYPASS_SSL || ( ( ! Rails.env.production? ) rescue false )
     end
 
@@ -1182,7 +1182,7 @@ module HubSsoLib
     def hubssolib_get_session_data
 
       # If we're not using SSL, forget it
-      return nil unless request.ssl? || hubssolib_no_ssl?
+      return nil unless request.ssl? || hubssolib_bypass_ssl?
 
       # If we've no cookie, we need a new session ID
       key = hubssolib_get_secure_cookie_data(HUBSSOLIB_COOKIE_NAME)
