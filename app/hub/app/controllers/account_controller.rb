@@ -1,6 +1,6 @@
 #######################################################################
 # File:    account_controller.rb                                      #
-#          (C) Hipposoft 2006-2011                                    #
+#          (C) Hipposoft 2006-2020                                    #
 #                                                                     #
 # Purpose: Hub account management.                                    #
 #                                                                     #
@@ -8,6 +8,7 @@
 #                                                                     #
 # History: 31-Jan-2011 (ADH): Comment header added; prior history     #
 #                             not recorded.                           #
+#          11-Apr-2020 (ADH): Rewrote #signup (as #new and #create).  #
 #######################################################################
 
 require 'will_paginate/array'
@@ -15,6 +16,14 @@ require 'will_paginate/array'
 class AccountController < ApplicationController
 
   layout 'application'
+
+  invisible_captcha only: :create, honeypot: :birth_year, on_spam: :spam_bail
+
+  PROHIBITED_EMAIL_SUFFIXES = %w{
+    .cn
+    .kr
+    .ru
+  }
 
   # Cache the logged in and out PNG images in RAM; they're only small.
 
@@ -86,73 +95,71 @@ class AccountController < ApplicationController
     redirect_to :controller => 'tasks', :action => nil
   end
 
-  def signup
+  def new
+    @user  = User.new
     @title = 'Sign up'
-    return unless request.post?
 
+    set_maths_question()
+  end
+
+  def create
     @user = User.new(allowed_user_params())
+    email = @user.email.downcase
 
-    if ( @user.email.downcase.ends_with?( '.kr' ) || @user.email.downcase.ends_with?( '.cn' ) )
-      hubssolib_set_flash(:attention, 'Due to overwhelming spam volumes from some locations, self-signups for those locations are blocked. Please contact ROOL for assistance.')
-      redirect_to :controller => 'tasks', :action => nil
-      return
+    # Prohibited domain / other simple "ends with" check fails? Bail out.
+    #
+    PROHIBITED_EMAIL_SUFFIXES.each do | suffix |
+      if email.end_with?(suffix)
+        hubssolib_set_flash(
+          :attention,
+          t('signup.blocked', institution_name_short: INSTITUTION_NAME_SHORT)
+        )
+
+        redirect_to :controller => 'tasks', :action => nil
+        return # NOTE EARLY EXIT
+      end
+    end
+
+    # A simple home-brew maths sort-of-captcha on top of the honeypot.
+    #
+    correct_answer = get_maths_answer()
+    actual_answer  = params.delete(:answer)&.to_i
+
+    set_maths_question()
+
+    if correct_answer != actual_answer
+      hubssolib_set_flash(:alert, t('signup.wrong_answer'))
+      render :new
+
+      return # NOTE EARLY EXIT
     end
 
     # Are there any users yet? If not, grant this user admin permissions.
     # Administrators are for just this application; whether or not admin
     # privileges affect other applications depends on the level of external
     # SSO integration.
+    #
+    is_admin = User.count.zero?
 
-    if (User.count.zero?)
+    @user.roles = HubSsoLib::Roles.new(is_admin).to_s
+    @user.save
 
-      @user.roles = HubSsoLib::Roles.new(true).to_s
-      @user.save!
-      @user.activate
-      self.hubssolib_current_user = from_real_user(@user)
-
-      hubssolib_set_flash(
-        :notice,
-        'Thanks for signing up. You are now the system administrator ' <<
-        'and your account has been automatically activated.'
-      )
+    if @user.errors.present?
+      hubssolib_set_flash(:error, t('signup.form_errors'))
+      render :new
 
     else
-
-      # Have to do the captcha verification explicitly before trying to save
-      # the model, as verification is not done as part of validation and we
-      # don't want to successfully save a model only to find that the captcha
-      # text is incorrect.
-
-      begin
-        success = verify_recaptcha(
-          :model   => @user,
-          :message => "The reCaptcha challenge wasn't happy with the response. Please try again or contact #{ INSTITUTION_NAME_LONG } for assistance."
-        )
-      rescue => e
-        Rails.logger.error(e.inspect)
-        hubssolib_set_flash(:attention, 'The reCaptcha system is currently not available and cannot verify signups. Please try again later.')
-        redirect_to :controller => 'tasks', :action => nil
-        return
+      if is_admin
+        @user.activate
+        self.hubssolib_current_user = from_real_user(@user)
+        hubssolib_set_flash(:notice, t('signup.success_admin'))
+      else
+        hubssolib_set_flash(:notice, t('signup.success_normal'))
       end
 
-      raise ActiveRecord::RecordInvalid.new(@user) if not success
-
-      @user.roles = HubSsoLib::Roles.new(false).to_s
-      @user.save!
-
-      hubssolib_set_flash(
-        :notice,
-        'Thanks for signing up. Your site account must be activated ' <<
-        'before you can use it - please check your e-mail account '   <<
-        'for a message which tells you what you should do next.'
-      )
+      redirect_to :controller => 'tasks', :action => nil
 
     end
-
-    redirect_to :controller => 'tasks', :action => nil
-
-  rescue ActiveRecord::RecordInvalid
-    render :action => 'signup'
   end
 
   def activate
@@ -166,23 +173,27 @@ class AccountController < ApplicationController
 
         hubssolib_set_flash(
           :notice,
-          "Your #{INSTITUTION_NAME_LONG} web site account is now active."
+          t(
+            'activate.activated',
+            institution_name_long: INSTITUTION_NAME_LONG
+          )
         )
 
         hubssolib_redirect_back_or_default(:controller => 'tasks', :action => nil)
       else
         hubssolib_set_flash(
           :alert,
-          "Unable to activate your #{INSTITUTION_NAME_LONG} web site account. "                <<
-          'Is the activation code correct, or has it already been used? '                      <<
-          "If in doubt please try to sign up again. Contact #{INSTITUTION_NAME_SHORT} if you " <<
-          'keep having trouble.'
+          t(
+            'activate.failed',
+            institution_name_long:  INSTITUTION_NAME_LONG,
+            institution_name_short: INSTITUTION_NAME_SHORT
+          )
         )
 
-        redirect_to :controller => 'account', :action => 'signup'
+        redirect_to :controller => 'account', :action => 'new'
       end
     else
-      redirect_to :controller => 'account', :action => 'signup'
+      redirect_to :controller => 'account', :action => 'new'
     end
   end
 
@@ -318,6 +329,7 @@ class AccountController < ApplicationController
   end
 
   def list
+    scope  = User.all
     @title = 'List of user accounts'
 
     # Page zero means 'all'.
@@ -330,7 +342,14 @@ class AccountController < ApplicationController
       per_page = 20
     end
 
-    @users = User.paginate(
+    search = params[:q]
+
+    if (search.present?)
+      text  = "%#{ search }%"
+      scope = scope.where("real_name ILIKE ? OR email ILIKE ?", text, text)
+    end
+
+    @users = scope.paginate(
       :page     => page,
       :per_page => per_page
     ).order( 'created_at DESC' )
@@ -486,7 +505,7 @@ class AccountController < ApplicationController
     end
   end
 
-protected
+private
 
   # Pass a HubSsoLib::User object. Returns an equivalent User Model object.
   # If the optional second parameter is 'true' (default 'false'), a failure
@@ -569,5 +588,26 @@ protected
 
   def allowed_user_params
     params.require(:user).permit(:email, :real_name, :password, :password_confirmation)
+  end
+
+  def set_maths_question
+    session[:num1] = (2..9).to_a.sample
+    session[:num2] = (2..9).to_a.sample
+    session[:op  ] = %w{+ - *}.sample
+  end
+
+  def get_maths_answer
+    num1   = session[:num1].to_i
+    num2   = session[:num2].to_i
+    answer = case session[:op]
+      when '+'
+        num1 + num2
+      when '-'
+        num1 - num2
+      when '*'
+        num1 * num2
+    end
+
+    return answer
   end
 end

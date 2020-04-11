@@ -122,13 +122,3 @@ div.exception p
   margin: 0;
   padding: 0;
 }
-
-/*****************************************************************************\
- * Browser-specific styles: Google reCaptcha bugs - the 'noscript' version is
- * pretty badly broken.
-\*****************************************************************************/
-
-noscript textarea#g-recaptcha-response
-{
-  display: none;
-}

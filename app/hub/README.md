@@ -31,10 +31,14 @@ bundle exec rake db:migrate
 
 ## Running
 
-You need to set Recaptcha credentials via environment variables, so for example you could use:
+It's often best to put the Hub SSL application on a different port from the
+usual one used for Rails applications, so you can leave it running in the
+background on some less conventional URL while developing the code in your
+application with integrates with Hub on the usual port number.
+
 
 ```
-RECAPTCHA_SITE_KEY="..." RECAPTCHA_SECRET_KEY="..." bundle exec rails s
+bundle exec rails s --port 3001
 ```
 
 

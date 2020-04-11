@@ -6,14 +6,14 @@ class User < ActiveRecord::Base
   # Virtual attribute for the unencrypted password
   attr_accessor :password
 
-  validates_presence_of     :email, :real_name
-  validates_presence_of     :password,                   :if => :password_required?
-  validates_presence_of     :password_confirmation,      :if => :password_required?
   validates_length_of       :password, :within => 4..40, :if => :password_required?
   validates_confirmation_of :password,                   :if => :password_required?
+
   validates_length_of       :email,     :within => 3..200
   validates_length_of       :real_name, :within => 3..200
+
   validates_uniqueness_of   :email, :case_sensitive => false
+
   before_save :encrypt_password
 
   def roles_array

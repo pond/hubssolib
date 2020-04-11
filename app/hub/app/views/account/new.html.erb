@@ -13,7 +13,7 @@
         <%= render "shared/error_messages", :target => @user %>
 
         <p />
-        <%= form_for :user do |f| %>
+        <%= form_for @user, :url => account_path(), :method => :post do |f| %>
           <table class="list" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
@@ -21,7 +21,10 @@
             </tr>
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
-              <td><%= f.text_field :real_name, { :size => 40, :maxlength => 128 } %></td>
+              <td>
+                <%= f.text_field :real_name, { :size => 40, :maxlength => 128 } %>
+                <%= f.invisible_captcha :birth_year %>
+              </td>
             </tr>
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="password">Password</label></th>
@@ -39,7 +42,8 @@
 
                   <br />
                   <br />
-                  <%= recaptcha_tags() %>
+                  What is <%= session[:num1] %> <%= session[:op] %> <%= session[:num2] %>?
+                  <%= text_field_tag :answer %>
 
                   <br />
                 </div>
@@ -47,8 +51,9 @@
             </tr>
           </table>
 
-          <p align="center" />
-          <%= submit_tag('Sign up') %>
+          <p align="center">
+            <%= submit_tag('Sign up') %>
+          </p>
         <% end %>
 
         <p />

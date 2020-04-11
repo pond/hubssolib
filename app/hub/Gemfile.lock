@@ -76,7 +76,8 @@ GEM
     hubssolib (1.0.0)
     i18n (1.8.2)
       concurrent-ruby (~> 1.0)
-    json (2.3.0)
+    invisible_captcha (1.0.1)
+      rails (>= 4.2)
     loofah (2.5.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -127,8 +128,6 @@ GEM
     rb-fsevent (0.10.3)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    recaptcha (5.5.0)
-      json
     regexp_parser (1.7.0)
     rubyzip (2.3.0)
     sass (3.7.4)
@@ -186,11 +185,11 @@ DEPENDENCIES
   capybara (>= 2.15)
   coffee-rails (~> 4.2)
   duktape
-  hubssolib (~> 1.0.0)
+  hubssolib (~> 1.0)
+  invisible_captcha (~> 1.0)
   pg (= 0.18.4)
   rails (~> 5.2.3)
   rails-observers
-  recaptcha
   sass-rails (~> 5.0)
   selenium-webdriver
   tzinfo-data

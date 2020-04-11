@@ -1,3 +1,9 @@
+## 2.1.0 (11-Apr-2020)
+
+Stop using Google captcha solutions; they don't play well with e.g. NetSurf. Rewritten with a lighter weight alternative - https://github.com/markets/invisible_captcha plus a simple home-brew maths question addition.
+
+Account list view now has a simple search function, at long last.
+
 ## 2.0.0 (01-May-2019)
 
 Rebuilt inside a new Rails 5.2.3 shell. Requires Hub gem version 1.0.0 or later.
