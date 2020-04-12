@@ -64,8 +64,22 @@ class AccountController < ApplicationController
   # The "proper" login method
   #
   def login
-    @title = 'Log in'
-    return unless request.post?
+    @title        = 'Log in'
+    return_to_url = hubssolib_get_return_to() || session[:return_to_url]
+
+    session.delete(:return_to_url)
+
+    # GET methods just show the login screen. Dump all known application
+    # cookies at this point, since they can be stale and logins might not
+    # be recognised properly otherwise.
+    #
+    unless request.post?
+      cookies.delete( 'hubapp_shared_id' )
+      cookies.delete( '_hub_session'     )
+
+      session[:return_to_url] = return_to_url
+      return
+    end
 
     @email = params[:email]
     self.hubssolib_current_user = from_real_user(User.authenticate(@email, params[:password]))
@@ -80,9 +94,15 @@ class AccountController < ApplicationController
         "You have #{privileges} privileges."
       )
 
-      hubssolib_redirect_back_or_default(:controller => 'tasks', :action => nil)
+      if return_to_url.present?
+        redirect_to(return_to_url)
+      else
+        redirect_to(:controller => 'tasks', :action => nil)
+      end
+
     else
       hubssolib_set_flash(:alert, 'Incorrect e-mail address or password.')
+
     end
   end
 
