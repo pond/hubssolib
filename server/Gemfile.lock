@@ -1,13 +1,13 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    hubssolib (1.0.0)
+    hubssolib (2.0.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  hubssolib (~> 1.0.0)
+  hubssolib (~> 2.0)
 
 BUNDLED WITH
    2.1.4
