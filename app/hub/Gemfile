@@ -6,7 +6,7 @@ ruby '2.5.8'
 gem 'duktape'
 gem 'tzinfo-data'
 gem 'will_paginate',     '~> 3.0'
-gem 'hubssolib',         '~> 1.0', :require => 'hub_sso_lib'
+gem 'hubssolib',         '~> 2.0', :require => 'hub_sso_lib'
 gem 'invisible_captcha', '~> 1.0'
 gem 'rails-observers'
 

@@ -18,9 +18,20 @@
 module HubSsoLib
 
   require 'drb'
+  require 'securerandom'
 
   # DRb connection
-  HUBSSOLIB_DRB_URI = ENV['HUB_CONNECTION_URI'] || 'drbunix:' + File.join( ENV['HOME'] || '/', '/.hub_drb')
+  HUB_CONNECTION_URI = ENV['HUB_CONNECTION_URI'] || 'drbunix:' + File.join( ENV['HOME'] || '/', '/.hub_drb')
+
+  unless HUB_CONNECTION_URI.downcase.start_with?('drbunix:')
+    puts
+    puts '*' * 80
+    puts "You *must* use a 'drbunix:' scheme for HUB_CONNECTION_URI (#{ HUB_CONNECTION_URI.inspect } is invalid)"
+    puts '*' * 80
+    puts
+
+    raise 'Exiting'
+  end
 
   # Location of Hub application root.
   HUB_PATH_PREFIX = ENV['HUB_PATH_PREFIX'] || ''
@@ -28,283 +39,42 @@ module HubSsoLib
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
   # be automatically logged out upon their next action.
-  HUBSSOLIB_IDLE_TIME_LIMIT = 4 * 60 * 60
+  HUB_IDLE_TIME_LIMIT = 4 * 60 * 60
 
-  # Random file location.
-  HUBSSOLIB_RND_FILE_PATH = ENV['HUB_RANDOM_FILE'] || File.join( ENV['HOME'] || '/', '/.hub_random')
-
-  # Shared cookie name and path.
-  HUBSSOLIB_COOKIE_NAME = 'hubapp_shared_id'
-  HUBSSOLIB_COOKIE_PATH = ENV['HUB_COOKIE_PATH']
+  # Shared cookie name.
+  HUB_COOKIE_NAME = 'hubapp_shared_id'
 
   # Bypass SSL, for testing purposes? Rails 'production' mode will
   # insist on SSL otherwise. Development & test environments do not,
   # so do not need this variable setting.
-  HUBSSOLIB_BYPASS_SSL = ( ENV['HUB_BYPASS_SSL'] == "true" )
-
-  # Cache the random data. Assuming FCGI or similar, this code gets
-  # executed only once per FCGI instance initialisation rather than
-  # once per request.
-
-  attr_reader :HUBSSOLIB_RANDOM_DATA, :HUBSSOLIB_RANDOM_DATA_SIZE
-
-  if (!File.exist?(HUBSSOLIB_RND_FILE_PATH))
-    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{HUBSSOLIB_RND_FILE_PATH}' is missing"
-  end
-
-  HUBSSOLIB_RANDOM_DATA_SIZE = File.size(HUBSSOLIB_RND_FILE_PATH)
-  HUBSSOLIB_RANDOM_DATA_SIZE = 16384 if (HUBSSOLIB_RANDOM_DATA_SIZE > 16384)
-
-  if HUBSSOLIB_RANDOM_DATA_SIZE < 1024
-    raise "HubSsoLib needs at least 1024 bytes of random data - file '#{HUBSSOLIB_RND_FILE_PATH}' is too small"
-  else
-    HUBSSOLIB_RANDOM_DATA = begin
-      File.open(HUBSSOLIB_RND_FILE_PATH) do | fh |
-        fh.read(HUBSSOLIB_RANDOM_DATA_SIZE)
-      end
-    end
-  end
+  HUB_BYPASS_SSL = ( ENV['HUB_BYPASS_SSL'] == "true" )
 
   # Thread safety.
-
-  HUBSSOLIB_MUTEX = Mutex.new
+  HUB_MUTEX = Mutex.new
 
   #######################################################################
-  # Class:   Crypto                                                     #
-  #          (C) Hipposoft 2006                                         #
+  # Class:   Serialiser                                                 #
+  #          (C) Hipposoft 2020                                         #
   #                                                                     #
-  # Purpose: Encryption and decryption utilities.                       #
+  # Purpose: Simple object serialiser/deserialiser.                     #
   #                                                                     #
   # Author:  A.D.Hodgkinson                                             #
   #                                                                     #
-  # History: 28-Aug-2006 (ADH): First version.                          #
-  #          20-Oct-2006 (ADH): Integrated into HubSsoLib, renamed to   #
-  #                             'Crypto' from 'HubSsoCrypto'.           #
-  #          01-May-2019 (ADH): Updated for Ruby 2.5.3.                 #
+  # History: 18-Apr-2002 (ADH): First version.                          #
   #######################################################################
 
-  # Encryption and decryption utility object. Once instantiated, a
-  # HubSsoLib::Crypto object is used to encrypt and decrypt data with the
-  # AES-256-CBC cipher. A single passphrase is used for both operations.
-  # A SHA-256 hash of that passphrase is used as the encryption key.
+  # Simple object serialiser and deserialiser using Marshal and Base64.
   #
-  # CBC operation requires an initialization vector for the first block of
-  # data during encryption and decryption. A block of random data is used
-  # for this in conjunction with the passphrase used to generate the key. By
-  # so doing, the initialization vector is not revealed to third parties,
-  # even though the source code of the object is available. The weakness is
-  # that for a given passphrase and random data pool the same initialization
-  # vector will always be generated - indeed, this is relied upon, to allow
-  # callers themselves to only have to remember the passphrase. See private
-  # method obtain_iv() for more details.
-  #
-  # The block of random data is obtained from the DRb server. It is usually
-  # a RAM-cached near-random file. The important behaviour is that the
-  # contents are not know to the outside world and the contents, while they
-  # may change at any point, don't change during the duration of a user
-  # log-in session (at least, if it changes, all current sessions will be
-  # harmlessly invalidated).
-  #
-  class Crypto
-
-    require 'openssl'
-    require 'digest/sha2'
-    require 'digest/md5'
-    require 'securerandom'
+  class Serialiser
     require 'base64'
 
-    # Generate a series of pseudo-random bytes of the given length.
-    #
-    def self.random_data(size)
-      SecureRandom.random_bytes(size)
+    def self.serialise_object(object)
+      Base64.strict_encode64(Marshal.dump(object))
     end
 
-    def random_data(size)
-      HubSsoLib::Crypto.random_data(size)
+    def self.deserialise_object(data)
+      Marshal.load(Base64.strict_decode64(data)) rescue nil
     end
-
-    # Encode some given data in base-64 format with no line breaks.
-    #
-    def self.pack64(data)
-      Base64.encode64(data)
-    end
-
-    def pack64(data)
-      HubSsoLib::Crypto.pack64(data)
-    end
-
-    # Decode some given data from base-64 format with no line breaks.
-    #
-    def self.unpack64(data)
-      Base64.decode64(data)
-    end
-
-    def unpack64(data)
-      HubSsoLib::Crypto.unpack64(data)
-    end
-
-    # Encrypt the given data with the AES-256-CBC algorithm using the
-    # given passphrase. Returns the encrypted result in a string.
-    # Distantly based upon:
-    #
-    #   http://www.bigbold.com/snippets/posts/show/576
-    #
-    # In the context of Hub, the passphrase tends to be fixed per IP
-    # address (albeit unknown to the public) and the IV is derived from
-    # it. This means the same data will encode to the same result. With
-    # the source data having some parts which are invariant, security
-    # is compromised. To avoid this, data is prefixed by a quantity of
-    # random bytes, effectively supplementing the IV and ensuring that
-    # different size and content data is generated each time.
-    #
-    def encrypt(data, passphrase)
-      cipher = OpenSSL::Cipher.new("aes-256-cbc")
-      cipher.encrypt
-
-      cipher.key = Digest::SHA256.digest(passphrase)
-      cipher.iv  = obtain_iv(passphrase)
-
-      rsize = rand(32)
-      data  = '' << rsize << random_data(rsize) << data
-
-      encrypted  = cipher.update(data)
-      encrypted << cipher.final
-
-      return encrypted
-    end
-
-    # Decrypt the given data with the AES-256-CBC algorithm using the
-    # given passphrase. Returns 'nil' if there is any kind of error in
-    # the decryption process. Distantly based upon:
-    #
-    #   http://www.bigbold.com/snippets/posts/show/576
-    #
-    def decrypt(data, passphrase)
-      cipher = OpenSSL::Cipher.new("aes-256-cbc")
-      cipher.decrypt
-
-      cipher.key = Digest::SHA256.digest(passphrase)
-      cipher.iv  = obtain_iv(passphrase)
-
-      decrypted  = cipher.update(data)
-      decrypted << cipher.final
-
-      rsize = decrypted[0].ord()
-
-      return decrypted[rsize + 1..-1]
-    rescue
-      return nil
-    end
-
-    # Encrypt and base-64 encode the given data with the given passphrase.
-    # Returns the encoded result.
-    #
-    def encode(data, passphrase)
-      pack64(encrypt(data, passphrase))
-    end
-
-    # Decrypt and base-64 decode the given data with the given passphrase.
-    # Returns the decoded result or 'nil' on error.
-    #
-    def decode(data, passphrase)
-      decrypt(unpack64(data), passphrase)
-    rescue
-      return nil
-    end
-
-    # Class method that takes an object and passphrase and encrypts
-    # the result. The passphrase is scrambled internally using data
-    # not available to the public, the object serialised (so it must
-    # support serialisation), encrypted and base-64 encoded, and the
-    # 7-bit safe string result returned. On failure, exceptions will
-    # be raised (failure is not expected).
-    #
-    def self.encode_object(object, passphrase)
-      crypto     = HubSsoLib::Crypto.new
-      passphrase = crypto.scramble_passphrase(passphrase)
-
-      return crypto.encode(Marshal.dump(object), passphrase)
-    end
-
-    def encode_object(object, passphrase)
-      HubSsoLib::Crypto.encode_object(object, passphrase)
-    end
-
-    # Class method that takes output from Crypto.encode_object and
-    # decodes it, returning an object reference. Since failure may
-    # result from invalid data input and this can be a common case,
-    # rather than raise an exception as with Crypto.encode_object,
-    # this method returns 'nil' should there be any decode problems.
-    #
-    def self.decode_object(data, passphrase)
-      crypto     = HubSsoLib::Crypto.new
-      passphrase = crypto.scramble_passphrase(passphrase)
-      object     = nil
-
-      if (data && !data.empty?)
-        object = Marshal.load(crypto.decode(data, passphrase))
-      end
-
-      return object
-    rescue
-      return nil
-    end
-
-    def decode_object(data, passphrase)
-      HubSsoLib::Crypto.decode_object(data, passphrase)
-    end
-
-    # "Scramble" a passphrase. Cookie data encryption is done purely so that
-    # some hypothetical malicious user cannot easily examine or modify the
-    # cookie contents for some nefarious purpose. Encryption is done at the
-    # head end. We need to be able to decrypt in the absence of any other
-    # information. A fixed passphrase thus needs to be used, but it cannot be
-    # included in the source code or anyone can read the cookie contents! To
-    # work around this, transform the passphrase into 16 bytes of data from
-    # the random pool if asked. The random pool is not known to the outside
-    # world so security is improved (albeit far from perfect, but this is all
-    # part of little more than an anti-spam measure - not Fort Knox!).
-    #
-    def scramble_passphrase(passphrase)
-
-      # Generate a 16-byte hash of the passphrase using the MD5 algorithm. Get
-      # this as a string of hex digits and convert that into an integer. Strip
-      # off the top bits (since we've no more reason to believe that the top
-      # bits contain more randomly varying data than the bottom bits) so that
-      # the number is bound to between zero and the random pool size, minus
-      # 16, thus providing an offset into the file from which we can safely
-      # read 16 bytes of data.
-
-      offset = Digest::MD5.hexdigest(passphrase).hex % (HubSsoLib::HUBSSOLIB_RANDOM_DATA_SIZE - 16)
-
-      # Return 32 bytes of data from the random pool at the calculated offset.
-
-      return HubSsoLib::HUBSSOLIB_RANDOM_DATA[offset..offset + 15]
-    end
-
-  private
-
-    # Obtain an initialization vector (IV) of 32 bytes (256 bits) length based
-    # on external data loaded when the object was created. Since the data
-    # content is unknown, the IV is unknown. This is important; see:
-    #
-    #   http://www.ciphersbyritter.com/GLOSSARY.HTM#CipherBlockChaining
-    #
-    # Weakness: An offset into the supplied data is generated from the given
-    # passphrase. Since the data is cached internally, the same IV will be
-    # produced for any given passphrase (this is as much a feature as it is a
-    # weakness, since the encryption and decryption routines rely on it).
-    #
-    # The passphrase scrambler is used to do the back-end work. Since the
-    # caller may have already scrambled the passphrase once, scrambled data is
-    # used as input; we end up scrambling it twice. This is a desired result -
-    # we don't want the IV being the data that's actually also used for the
-    # encryption passphrase.
-    #
-    def obtain_iv(passphrase)
-      return scramble_passphrase(passphrase)
-    end
-
   end # Crypto class
 
   #######################################################################
@@ -612,12 +382,16 @@ module HubSsoLib
     attr_accessor :session_return_to
     attr_accessor :session_flash
     attr_accessor :session_user
+    attr_accessor :session_key_rotation
+    attr_accessor :session_ip
 
     def initialize
-      @session_last_used = Time.now.utc
-      @session_return_to = nil
-      @session_flash     = {}
-      @session_user      = HubSsoLib::User.new
+      @session_last_used    = Time.now.utc
+      @session_return_to    = nil
+      @session_flash        = {}
+      @session_user         = HubSsoLib::User.new
+      @session_key_rotation = nil
+      @session_ip           = nil
     end
   end # Session class
 
@@ -637,19 +411,57 @@ module HubSsoLib
     def initialize
       puts "Session factory: Awaken"
 
-      @sessions = {}
+      @hub_sessions = {}
     end
 
-    def get_session(key)
-      unless (@sessions.has_key? key)
-        @sessions[key] = HubSsoLib::Session.new
+    # Get a session using a given key (a UUID). Generates a new session if
+    # the key is unrecognised or if the IP address given mismatches the one
+    # recorded in existing session data.
+    #
+    # Whether new or pre-existing, the returned session will have changed key
+    # as a result of being read; check the #session_key_rotation property to
+    # find out the new key. If you fail to do this, you'll lose access to the
+    # session data as you won't know which key it lies under.
+    #
+    # The returned object is proxied via DRb - it is shared between processes.
+    #
+    # +key+::       Session key; lazy-initialises a new session under this key
+    #               if none is found, then immeediately rotates it.
+    #
+    # +remote_ip+:: Request's remote IP address. If there is an existing
+    #               session which matches this, it's returned. If there is an
+    #               existing session but the IP mismatches, it's treated as
+    #               invalid and discarded.
+    #
+    def get_hub_session_proxy(key, remote_ip)
+      retrieve_existing = @hub_sessions.has_key?(key)
+      message           = retrieve_existing ? 'Retrieving' : 'Created'
+      new_key           = SecureRandom.uuid
+
+      puts "#{message} session for key #{key} and rotating to #{new_key}"
+
+      if retrieve_existing
+        hub_session = @hub_sessions[key]
+        if remote_ip != hub_session.session_ip
+          puts "WARNING: IP address changed from #{hub_session.session_ip} to #{remote_ip} -> discarding session"
+          hub_session = @hub_sessions[key] = HubSsoLib::Session.new
+        end
+
+      else
+        hub_session            = @hub_sessions[key] = HubSsoLib::Session.new
+        hub_session.session_ip = remote_ip
+
       end
 
-      return @sessions[key]
+      @hub_sessions.delete(key)
+      @hub_sessions[new_key] = hub_session
+
+      hub_session.session_key_rotation = new_key
+      return hub_session
     end
 
-    def enumerate_sessions()
-      @sessions
+    def enumerate_hub_sessions()
+      @hub_sessions
     end
   end
 
@@ -671,9 +483,10 @@ module HubSsoLib
 
   module Server
     def hubssolib_launch_server
-      puts "Server: Starting at #{ HUBSSOLIB_DRB_URI }"
-      @@session_factory = HubSsoLib::SessionFactory.new
-      DRb.start_service(HUBSSOLIB_DRB_URI, @@session_factory, { :safe_level => 1 })
+      puts "Server: Starting at #{ HUB_CONNECTION_URI }"
+
+      @@hub_session_factory = HubSsoLib::SessionFactory.new
+      DRb.start_service(HUB_CONNECTION_URI, @@hub_session_factory, { :safe_level => 1 })
       DRb.thread.join
     end
   end # Server module
@@ -730,7 +543,7 @@ module HubSsoLib
       return false unless hubssolib_logged_in?
 
       pnormal = HubSsoLib::Roles.new(false).to_s
-      puser   = hubssolib_get_user_roles.to_s
+      puser   = hubssolib_get_user_roles().to_s
 
       return (puser && !puser.empty? && puser != pnormal)
     end
@@ -741,33 +554,36 @@ module HubSsoLib
     def hubssolib_log_out
       # Causes the "hubssolib_current_[foo]=" methods to run, which
       # deal with everything else.
-      self.hubssolib_current_user    = nil
-      self.hubssolib_current_session = nil
+      self.hubssolib_current_user = nil
+      @hubssolib_current_session_proxy = nil
     end
 
-    # Accesses the current user, via the DRb server if necessary
+    # Accesses the current session from the cookie. Creates a new session
+    # object if need be, but can return +nil+ if e.g. attempting to access
+    # session cookie data without SSL.
+    #
+    def hubssolib_current_session
+      @hubssolib_current_session_proxy ||= hubssolib_get_session_proxy()
+    end
+
+    # Accesses the current user, via the DRb server if necessary.
     #
     def hubssolib_current_user
-      hubssolib_get_user_data
+      hub_session = self.hubssolib_current_session
+      user        = hub_session.nil? ? nil : hub_session.session_user
+
+      if (user && user.user_id)
+        return user
+      else
+        return nil
+      end
     end
 
     # Store the given user data in the cookie
     #
-    def hubssolib_current_user=(new_user)
-      hubssolib_set_user_data(new_user)
-    end
-
-    # Accesses the current session from the cookie. Creates a new
-    # session object if need be.
-    #
-    def hubssolib_current_session
-      @hubssolib_current_session ||= hubssolib_get_session_data
-    end
-
-    # Store the given session data.
-    #
-    def hubssolib_current_session=(new_session)
-      @hubssolib_current_session = new_session
+    def hubssolib_current_user=(user)
+      hub_session = self.hubssolib_current_session
+      hub_session.session_user = user unless hub_session.nil?
     end
 
     # Public read-only accessor methods for common user activities:
@@ -850,23 +666,7 @@ module HubSsoLib
       # So we reach here knowing we're logged in, but the action may or
       # may not require authorisation.
 
-      unless (login_is_required)
-
-        # We have to update session expiry even for actions that don't
-        # need us to be logged in, since we *are* logged in and need to
-        # maintain that state. If, though, the session expires, we just
-        # quietly log out and let action processing carry on.
-
-        if (hubssolib_session_expired?)
-          hubssolib_log_out
-          hubssolib_set_flash(:attention, 'Your session timed out, so you are no longer logged in.')
-        else
-          hubssolib_set_last_used(Time.now.utc)
-        end
-
-        return true # true -> let action processing continue
-
-      else
+      if (login_is_required)
 
         # Login *is* required for this action. If the session expires,
         # redirect to Hub's login page via its expiry action. Otherwise
@@ -886,6 +686,22 @@ module HubSsoLib
           hubssolib_set_last_used(Time.now.utc)
           return hubssolib_authorized? ? true : hubssolib_access_denied
         end
+
+      else
+
+        # We have to update session expiry even for actions that don't
+        # need us to be logged in, since we *are* logged in and need to
+        # maintain that state. If, though, the session expires, we just
+        # quietly log out and let action processing carry on.
+
+        if (hubssolib_session_expired?)
+          hubssolib_log_out
+          hubssolib_set_flash(:attention, 'Your session timed out, so you are no longer logged in.')
+        else
+          hubssolib_set_last_used(Time.now.utc)
+        end
+
+        return true # true -> let action processing continue
 
       end
     end
@@ -934,7 +750,7 @@ module HubSsoLib
     def hubssolib_promote_uri_to_ssl(uri_str, host = nil)
       uri = URI.parse(uri_str)
       uri.host = host if host
-      uri.scheme = hubssolib_bypass_ssl? ? 'http' : 'https'
+      uri.scheme = hub_bypass_ssl? ? 'http' : 'https'
       return uri.to_s
     end
 
@@ -943,7 +759,7 @@ module HubSsoLib
     # 'true' if not redirected (already HTTPS), else 'false'.
     #
     def hubssolib_ensure_https
-      if request.ssl? || hubssolib_bypass_ssl?
+      if request.ssl? || hub_bypass_ssl?
         return true
       else
         # This isn't reliable: redirect_to({ :protocol => 'https://' })
@@ -1046,10 +862,26 @@ module HubSsoLib
 
   private
 
+    # Establish a single DRb factory connection.
+    #
+    def hubssolib_factory
+      HUB_MUTEX.synchronize do
+        begin
+          DRb.current_server
+        rescue DRb::DRbServerNotFound
+          DRb.start_service()
+        end
+
+        @factory ||= DRbObject.new_with_uri(HUB_CONNECTION_URI)
+      end
+
+      return @factory
+    end
+
     # Helper that decides if we should insist on SSL (or not).
     #
-    def hubssolib_bypass_ssl?
-      HUBSSOLIB_BYPASS_SSL || ( ( ! Rails.env.production? ) rescue false )
+    def hub_bypass_ssl?
+      HUB_BYPASS_SSL || ! Rails.env.production?
     end
 
     # Indicate that the user must log in to complete their request.
@@ -1114,85 +946,26 @@ module HubSsoLib
       # considered acceptable, though who knows, the view may change in future.
 
       last_used = hubssolib_get_last_used
-      (request.method != :post && last_used && Time.now.utc - last_used > HUBSSOLIB_IDLE_TIME_LIMIT)
+      (request.method != :post && last_used && Time.now.utc - last_used > HUB_IDLE_TIME_LIMIT)
     end
 
-    # Retrieve data from a given cookie with encrypted contents.
-    #
-    def hubssolib_get_secure_cookie_data(name)
-      return HubSsoLib::Crypto.decode_object(cookies[name], request.remote_ip)
-    end
-
-    # Set the given cookie to a value of the given data, which
-    # will be encrypted.
-    #
-    def hubssolib_set_secure_cookie_data(name, value)
-      if (@hubssolib_have_written_cookie)
-        raise "HubSsoLib: Attmept to set cookie '#{name}' more than once"
-      end
-
-      @hubssolib_have_written_cookie = true
-
-      # Using cookies.delete *should* work but doesn't. Set the
-      # cookie with nil data instead.
-
-      data = value.nil? ? nil : HubSsoLib::Crypto.encode_object(value, request.remote_ip)
-
-      # No expiry time; to aid security, use session cookies only.
-
-      cookies[name] = {
-                        :value  => data,
-                        :path   => HUBSSOLIB_COOKIE_PATH,
-                        :secure => ! hubssolib_bypass_ssl?
-                      }
-    end
-
-    # Establish a single DRb factory connection.
-    #
-    def hubssolib_factory
-      HUBSSOLIB_MUTEX.synchronize do
-        begin
-          DRb.current_server
-        rescue DRb::DRbServerNotFound
-          DRb.start_service()
-        end
-
-        @factory ||= DRbObject.new_with_uri(HUBSSOLIB_DRB_URI)
-      end
-
-      return @factory
-    end
-
-    # Retrieve user data from the DRb server.
-    #
-    def hubssolib_get_user_data
-      user = self.hubssolib_current_session ? self.hubssolib_current_session.session_user : nil
-
-      if (user && user.user_id)
-        return user
-      else
-        return nil
-      end
-    end
-
-    def hubssolib_set_user_data(user)
-      self.hubssolib_current_session.session_user = user
-    end
-
-    def hubssolib_get_session_data
-
+    def hubssolib_get_session_proxy
       # If we're not using SSL, forget it
-      return nil unless request.ssl? || hubssolib_bypass_ssl?
+      return nil unless request.ssl? || hub_bypass_ssl?
 
-      # If we've no cookie, we need a new session ID
-      key = hubssolib_get_secure_cookie_data(HUBSSOLIB_COOKIE_NAME)
+      key         = cookies[HUB_COOKIE_NAME] || SecureRandom.uuid
+      hub_session = hubssolib_factory().get_hub_session_proxy(key, request.remote_ip)
+      key         = hub_session.session_key_rotation unless hub_session.nil?
 
-      unless (key)
-        key = HubSsoLib::Crypto.pack64(HubSsoLib::Crypto.random_data(48))
-        hubssolib_set_secure_cookie_data(HUBSSOLIB_COOKIE_NAME, key)
-      end
+      cookies[HUB_COOKIE_NAME] = {
+        :value    => key,
+        :domain   => :all,
+        :path     => '/',
+        :secure   => ! hub_bypass_ssl?,
+        :httponly => true
+      }
 
-      return hubssolib_factory().get_session(key)
+      return hub_session
 
     rescue Exception => e
 
@@ -1205,7 +978,8 @@ module HubSsoLib
 
       suffix   = '/' + CGI::escape(CGI::escape(hubssolib_set_exception_data(e)))
       new_path = HUB_PATH_PREFIX + '/tasks/service'
-      redirect_to new_path + suffix unless request.path.include?(new_path)
+      redirect_to(new_path + suffix) unless request.path.include?(new_path)
+
       return nil
     end
 
@@ -1222,7 +996,7 @@ module HubSsoLib
     # be allowed access.
     #
     def hubssolib_enumerate_users
-      sessions = hubssolib_factory().enumerate_sessions()
+      sessions = hubssolib_factory().enumerate_hub_sessions()
       users    = []
 
       sessions.each do |key, value|
@@ -1249,11 +1023,11 @@ module HubSsoLib
     # message.
     #
     def hubssolib_set_exception_data(e)
-      if (Rails.env.development? rescue false)
+      if Rails.env.development?
         backtrace = e.backtrace.join( ", " )
-        HubSsoLib::Crypto.encode_object("#{ e.message }: #{ backtrace }"[0..511], request.remote_ip)
+        HubSsoLib::Serialiser.serialise_object("#{ e.message }: #{ backtrace }"[0..511])
       else
-        HubSsoLib::Crypto.encode_object(e.message[0..511], request.remote_ip)
+        HubSsoLib::Serialiser.serialise_object(e.message[0..511])
       end
     end
 
@@ -1262,7 +1036,7 @@ module HubSsoLib
     # are any decoding problems. Pass the encoded data.
     #
     def hubssolib_get_exception_data(data)
-      HubSsoLib::Crypto.decode_object(data, request.remote_ip)
+      HubSsoLib::Serialiser.deserialise_object(data)
     end
 
     # Various accessors that ultimately run through the DRb server if

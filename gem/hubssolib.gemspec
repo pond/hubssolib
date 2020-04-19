@@ -4,7 +4,7 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name     = 'hubssolib'
 
-  s.version  = '1.0.0'
+  s.version  = '2.0.0'
   s.author   = 'Andrew Hodgkinson and others'
   s.email    = 'ahodgkin@rowing.org.uk'
   s.homepage = 'http://hub.pond.org.uk/'

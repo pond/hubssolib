@@ -19,7 +19,7 @@ RSpec.describe HubSsoLib::SessionFactory do
   it 'enumerates sessions' do
     foo  = subject().get_session( :foo )
     bar  = subject().get_session( :bar )
-    list = subject().enumerate_sessions()
+    list = subject().enumerate_hub_sessions()
 
     expect( list ).to eql( { :foo => foo, :bar => bar } )
   end

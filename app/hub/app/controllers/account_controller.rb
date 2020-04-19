@@ -410,8 +410,8 @@ class AccountController < ApplicationController
   def show
     @title    = 'User account details'
     @user     = User.find(params[:id])
-    @referrer = request.env["HTTP_REFERER"]
-    @referrer = nil unless (@referrer && !@referrer.empty?)
+    @referrer = request.referrer
+    @referrer = nil unless @referrer.present?
   end
 
   def edit_roles
@@ -515,11 +515,11 @@ class AccountController < ApplicationController
   #
   def login_conditional
     if (hubssolib_ensure_https) # Redirect back to here using HTTPS, if not already
-      hubssolib_store_location(nil)
-
       if (hubssolib_logged_in?)
+        hubssolib_store_location(nil)
         redirect_to :controller => 'tasks', :action => nil
       else
+        hubssolib_store_location(request.referrer)
         redirect_to :action => 'login'
       end
     end

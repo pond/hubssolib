@@ -4,6 +4,10 @@ Stop using Google captcha solutions; they don't play well with e.g. NetSurf. Rew
 
 Account list view now has a simple search function, at long last.
 
+If an HTTP `Referer` header is set by the application redirecting to Hub via `account/login_conditional`, the Hub session cookie will remember the referrer URI and return there after a user signs in. Previously, only automated redirect-to-log-in events caused by integrated applications being asked to perform user actions that required a signed-in user would do this; explicitly following a link to the Hub log-in page would not.
+
+Requires Hub gem version 2.0.0 or later.
+
 ## 2.0.0 (01-May-2019)
 
 Rebuilt inside a new Rails 5.2.3 shell. Requires Hub gem version 1.0.0 or later.
