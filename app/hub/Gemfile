@@ -13,7 +13,7 @@ gem 'rails-observers'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 6'
 # Use sqlite3 as the database for Active Record
-gem 'pg', '= 0.21.0' # TODO: Version lock is a ROOL / RISC OS Open customisation
+gem 'pg', '~> 1.4.1'
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 6.0'
 # Use Uglifier as compressor for JavaScript assets
