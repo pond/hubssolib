@@ -23,7 +23,7 @@ spec = Gem::Specification.new do |s|
   EOF
 
   s.files = FileList['lib/**/*.rb', '[A-Z]*'].to_a
-  s.required_ruby_version = '>= 2.5.3' # Not tested on earlier versions
+  s.required_ruby_version = '>= 2.5.9' # Not tested on earlier versions
 
   s.add_development_dependency 'simplecov',   '~> 0.16'
   s.add_development_dependency 'rspec',       '~> 3.8'

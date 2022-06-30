@@ -12,7 +12,7 @@
 #                             path come from environment variables.   #
 #          09-Mar-2011 (ADH): Updated for Hub on Rails 2.3.11 along   #
 #                             with several important bug fixes.       #
-#          01-May-2019 (ADH): Updated for Ruby 2.5.3.                 #
+#          01-May-2019 (ADH): Updated for Ruby 2.5.x.                 #
 #######################################################################
 
 module HubSsoLib

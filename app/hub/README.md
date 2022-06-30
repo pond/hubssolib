@@ -20,6 +20,21 @@ Use `bundler` to install gem dependencies:
 bundle install
 ```
 
+If your host is unusual and you get issues with e.g. Nokogiri failing to
+`require 'nokogiri/nokogiri'` or e.g. SASS complaining about range characters,
+there's a good chance that you need to compile gems manually rather than using
+pre-built binaries as those aren't working on your host. In that case:
+
+```
+bundle config force_ruby_platform true
+```
+
+...and consider e.g. `rm Gemfile.lock; bundle update` to force a rebuild. You
+may need to manually remove any prebuilt gem versions with `gem uninstall` -
+it will list all gem versions if there is more than one choice and the variant
+built for a specific architecture is easy to see as the architecture's name is
+listed with the gem.
+
 ## Database setup
 
 Use the migrations rather than schema:

@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.5.8'
+ruby '2.5.9'
 
 gem 'duktape'
 gem 'tzinfo-data'
@@ -13,7 +13,7 @@ gem 'rails-observers'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.2.3'
 # Use sqlite3 as the database for Active Record
-gem 'pg', '= 0.18.4' # TODO: Version lock is a ROOL / RISC OS Open customisation
+gem 'pg', '= 0.21.0' # TODO: Version lock is a ROOL / RISC OS Open customisation
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
 # Use Uglifier as compressor for JavaScript assets
