@@ -1,0 +1,14 @@
+          <h2>Secure services failure</h2>
+
+          <p />
+          Sorry, the <%= INSTITUTION_NAME_LONG %> site is not available at the moment due to
+          an internal technical failure.
+
+          <p />
+          The site should be running again shortly. Please try again in a few minutes. If the
+          fault persists, please consider contacting <%= INSTITUTION_NAME_LONG %> at
+          <tt><%= mail_to( EMAIL_ADMIN ) %></tt> as we may not be aware of the problem and
+          paste in the error information below. Thanks for your patience!
+
+          <p />
+          <%= exception_info %>

@@ -1,0 +1,66 @@
+        Please supply the information required in the form below to create a new
+        web site account, then use the "Sign up" button to create the account and
+        log in.
+
+        <p />
+        Your <b>e-mail address</b> is required for account activation. Please give a
+        reasonably complete <b>real name</b> that you are happy being used in forum posts,
+        documentation pages, welcome messages and so-on (e.g. "John Doe"). Your
+        <b>password</b> can consist of any combination of letters, numbers and symbols
+        but must be at least four characters long.
+
+        <p />
+        <%= render "shared/error_messages", :target => @user %>
+
+        <p />
+        <%= form_for @user, :url => account_path(), :method => :post do |f| %>
+          <table class="list" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
+            <tr>
+              <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
+              <td><%= f.text_field :email, { :size => 40, :maxlength => 200 } %></td>
+            </tr>
+            <tr>
+              <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
+              <td>
+                <%= f.text_field :real_name, { :size => 40, :maxlength => 128 } %>
+                <%= f.invisible_captcha :birth_year %>
+              </td>
+            </tr>
+            <tr>
+              <th bgcolor="#eeeeee" align="left"><label for="password">Password</label></th>
+              <td><%= f.password_field :password, { :size => 40, :maxlength => 40 } %></td>
+            </tr>
+            <tr>
+              <th bgcolor="#eeeeee" align="left"><label for="password_confirmation">Confirm password</label></th>
+              <td><%= f.password_field :password_confirmation, { :size => 40, :maxlength => 40 } %></td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <div align="center">
+                  <br />
+                  Please prove that you're a human!
+
+                  <br />
+                  <br />
+                  What is <%= session[:num1] %> <%= session[:op] %> <%= session[:num2] %>?
+                  <%= text_field_tag :answer %>
+
+                  <br />
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <p align="center">
+            <%= submit_tag('Sign up') %>
+          </p>
+        <% end %>
+
+        <p />
+        We will never pass your details to third parties or send you unsolicited e-mail messages.
+        For more information, please see our <a href="/content/documents/privacy/">privacy page</a>.
+
+        <p />
+        If you don't want to do this, you can
+        <%= link_to 'go back to the control panel', :controller => 'tasks', :action => 'index' %>
+        instead.

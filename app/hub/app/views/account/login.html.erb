@@ -1,0 +1,33 @@
+          Please enter your e-mail address and account password in the table below, then
+          use the "Log in" button below to proceed.
+
+          <p />
+          <%= form_tag do %>
+            <table class="list" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
+              <tr>
+                <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
+                <td><%= text_field_tag 'email', @email, :size => 40, :maxlength => 200 %></td>
+              </tr>
+              <tr>
+                <th bgcolor="#eeeeee" align="left"><label for="password">Password</label></th>
+                <td><%= password_field_tag 'password', '', :size => 40, :maxlength => 40 %></td>
+              </tr>
+            </table>
+
+            <p align="center" />
+            <%= submit_tag('Log in') %>
+          <% end %>
+
+          <p />
+          Other options:
+
+          <p />
+          <table border="0" cellspacing="0" cellpadding="6" align="center">
+            <tr valign="top" align="center">
+              <td><%= make_action_link('tasks', 'index', 80, 80, 'Control<br />panel') %></td>
+              <td>&nbsp;&nbsp;</td>
+              <td><%= make_action_link('account', 'forgot_password', 80, 80, 'Forgotten<br />password?') %></td>
+              <td>&nbsp;&nbsp;</td>
+              <td><%= make_action_link('account', 'new', 80, 80, 'Sign up!') %></td>
+            </tr>
+          </table>

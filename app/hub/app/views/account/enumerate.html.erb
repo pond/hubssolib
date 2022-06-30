@@ -1,0 +1,44 @@
+<% unless (@users.count.zero?) -%>
+          <table class="list" style="font-size: 80%" border="1" align="center" cellspacing="1" cellpadding="4">
+            <tr bgcolor="#eeeeee">
+              <th>Owner</th>
+              <th>Last&nbsp;updated</th>
+              <th>Activated?</th>
+              <th>Remembered?</th>
+              <th>Password&nbsp;reset?</th>
+              <th>Actions</th>
+            </tr>
+
+            <% @users.each do |user| -%><tr class="<%= cycle('even', 'odd') %>">
+              <td>
+                <%= h(user.real_name) %><br />
+                <a href="mailto:<%= h(user.email) %>"><%= h(user.email) %></a>
+              </td>
+              <td><%= user.updated_at %></td>
+              <%= boolean_cell(user.activated_at) %>
+              <%= expired_cell(user.remember_token_expires_at) %>
+              <%= expired_cell(user.password_reset_code_expires_at) %>
+              <%= list_actions(user) %>
+            </tr><% end %>
+          </table>
+
+          <p align="center" class="paginator">
+            <%= will_paginate @users %>
+<%   if @users.total_pages > 1 -%>
+            <%= link_to("All", :page => 0) %>
+<%   elsif (params.has_key?(:page) && params[:page] == '0') -%>
+            <%= link_to("Paged") %>
+<%   end -%>
+          </p>
+<% else -%>
+          <p>
+            There are no users currently active. Since this view should only
+            be accessible by logging in, there is either a fault in the access
+            model or in the session enumeration mechanism.
+          </p>
+<% end -%>
+
+          <p>
+            When you've finished listing active users, you can
+            <%= link_to 'return to the control panel', :controller => 'tasks', :action => nil %>.
+          </p>
