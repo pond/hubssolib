@@ -75,7 +75,7 @@ module HubSsoLib
     def self.deserialise_object(data)
       Marshal.load(Base64.strict_decode64(data)) rescue nil
     end
-  end # Crypto class
+  end # Serialiser class
 
   #######################################################################
   # Class:   Roles                                                      #
@@ -409,9 +409,10 @@ module HubSsoLib
 
   class SessionFactory
     def initialize
-      puts "Session factory: Awaken"
-
+      @hub_be_quiet = ! ENV['HUB_QUIET_SERVER'].nil?
       @hub_sessions = {}
+
+      puts "Session factory: Awaken" unless @hub_be_quiet
     end
 
     # Get a session using a given key (a UUID). Generates a new session if
@@ -434,23 +435,25 @@ module HubSsoLib
     #               invalid and discarded.
     #
     def get_hub_session_proxy(key, remote_ip)
-      retrieve_existing = @hub_sessions.has_key?(key)
-      message           = retrieve_existing ? 'Retrieving' : 'Created'
-      new_key           = SecureRandom.uuid
+      hub_session = @hub_sessions[key]
+      message     = hub_session.nil? ? 'Created' : 'Retrieving'
+      new_key     = SecureRandom.uuid
 
-      puts "#{message} session for key #{key} and rotating to #{new_key}"
+      unless @hub_be_quiet
+        puts "#{ message } session for key #{ key } and rotating to #{ new_key }"
+      end
 
-      if retrieve_existing
-        hub_session = @hub_sessions[key]
-        if remote_ip != hub_session.session_ip
-          puts "WARNING: IP address changed from #{hub_session.session_ip} to #{remote_ip} -> discarding session"
-          hub_session = @hub_sessions[key] = HubSsoLib::Session.new
+      unless hub_session.nil? || hub_session.session_ip == remote_ip
+        unless @hub_be_quiet
+          puts "WARNING: IP address changed from #{ hub_session.session_ip } to #{ remote_ip } -> discarding session"
         end
 
-      else
-        hub_session            = @hub_sessions[key] = HubSsoLib::Session.new
-        hub_session.session_ip = remote_ip
+        hub_session = nil
+      end
 
+      if hub_session.nil?
+        hub_session            = HubSsoLib::Session.new
+        hub_session.session_ip = remote_ip
       end
 
       @hub_sessions.delete(key)
@@ -483,7 +486,7 @@ module HubSsoLib
 
   module Server
     def hubssolib_launch_server
-      puts "Server: Starting at #{ HUB_CONNECTION_URI }"
+      puts "Server: Starting at #{ HUB_CONNECTION_URI }" unless ENV['HUB_QUIET_SERVER'].nil?
 
       @@hub_session_factory = HubSsoLib::SessionFactory.new
       DRb.start_service(HUB_CONNECTION_URI, @@hub_session_factory, { :safe_level => 1 })
@@ -819,7 +822,7 @@ module HubSsoLib
       keys = ordered_keys | hash.keys
 
       keys.each do | key |
-        compiled_data[ 'hub' ][ key ] = hash[ key ] if hash.has_key?( key )
+        compiled_data['hub'][key] = hash[key] if hash.key?(key)
       end
 
       if defined?( flash )
@@ -827,7 +830,7 @@ module HubSsoLib
         keys = ordered_keys | hash.keys
 
         keys.each do | key |
-          compiled_data[ 'standard' ][ key ] = hash[ key ] if hash.has_key?( key )
+          compiled_data['standard'][key] = hash[key] if hash.key?(key)
         end
       end
 

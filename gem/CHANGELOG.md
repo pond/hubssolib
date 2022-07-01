@@ -1,4 +1,11 @@
-## Version 1 -> Version 2.0.0, 19-Apr-2020
+## 2.1.0, 01-Jul-2022
+
+* Use `HUB_QUIET_SERVER=yes ...` to quieten `$stdout` output from Hub server.
+* Test coverage fixed (overlooked in v2.0.0 release).
+* Maintenance `bundle update`.
+* A few minor tidy-ups in the implementation.
+
+## Version 1.0.0 -> Version 2.0.0, 19-Apr-2020
 
 The public interface to applications is generally unchanged, but the cookie storage mechanism has been improved and is not compatible with v1 of Hub. You will need to use the newer Hub application, server and gem, but hopefully will find you don't need to change anything with your integrated applications.
 

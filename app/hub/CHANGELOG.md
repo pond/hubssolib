@@ -1,3 +1,7 @@
+## 2.1.1 (01-Jul-2021)
+
+Maintenance update - requires Hub gem version 2.1.0.
+
 ## 2.1.0 (11-Apr-2020)
 
 Stop using Google captcha solutions; they don't play well with e.g. NetSurf. Rewritten with a lighter weight alternative - https://github.com/markets/invisible_captcha plus a simple home-brew maths question addition.
