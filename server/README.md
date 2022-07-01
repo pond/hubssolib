@@ -10,6 +10,14 @@ bundle install
 
 ## Startup
 
+Some basic information about sessions is printed to `$stdout` by default:
+
 ```
 bundle exec ruby hub_sso_server.rb &
+```
+
+Turn off the output entirely by setting environment variable `HUB_QUIET_SERVER` to `yes`, e.g. with:
+
+```
+HUB_QUIET_SERVER=yes bundle exec ruby hub_sso_server.rb &
 ```

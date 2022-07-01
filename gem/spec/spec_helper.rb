@@ -2,6 +2,8 @@
 # Configure test environment
 # ============================================================================
 
+require 'byebug'
+
 # Configure the code coverage analyser
 
 require 'simplecov'
@@ -9,6 +11,10 @@ require 'simplecov'
 SimpleCov.start do
   add_filter '/spec/'
 end
+
+# Wake up Hub
+
+require 'hub_sso_lib'
 
 # Configure RSpec
 
@@ -21,6 +27,7 @@ RSpec.configure do | config |
   Kernel.srand config.seed
 
   config.before( :suite ) do
+    ENV['HUB_QUIET_SERVER'] = 'yes'
   end
 
   config.after( :suite ) do
@@ -32,17 +39,3 @@ RSpec.configure do | config |
   config.after( :each ) do
   end
 end
-
-# ============================================================================
-# Wake up Hub
-# ============================================================================
-
-# Set the random file environment variable to a full path to the given
-# leaf inside the "files" subdirectory.
-#
-def spechelper_set_random_file(leaf = "random.bin")
-  ENV[ 'HUB_RANDOM_FILE' ] = File.join( File.dirname( __FILE__ ), 'files', leaf )
-end
-
-spechelper_set_random_file()
-require 'hub_sso_lib'
