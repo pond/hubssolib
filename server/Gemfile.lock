@@ -10,4 +10,4 @@ DEPENDENCIES
   hubssolib (~> 2.1.0)
 
 BUNDLED WITH
-   2.3.17
+   2.5.6

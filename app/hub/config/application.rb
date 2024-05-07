@@ -31,7 +31,7 @@ RESET_TIME_LIMIT_PRODUCTION  = 2 * 24 * 60 * 60
 module Hub
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 5.2
+    config.load_defaults 7.0
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration can go into files in config/initializers
@@ -42,6 +42,7 @@ module Hub
     config.active_record.default_timezone = :utc
 
     config.active_record.observers = :user_observer
+    config.hosts << "epsilon.arachsys.com"
 
     config.force_ssl = true if Rails.env.production?
   end

@@ -88,7 +88,7 @@ module ApplicationHelper
     end
 
     html = form_tag({:controller => controller, :action => action, :id => id})
-    html << tag.input(opts)
+    html << tag.input(**opts)
     html << '</form>'.html_safe()
 
     unless (text.nil? or text.empty?)
