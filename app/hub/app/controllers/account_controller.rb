@@ -19,10 +19,23 @@ class AccountController < ApplicationController
 
   invisible_captcha only: :create, honeypot: :birth_year, on_spam: :spam_bail
 
-  PROHIBITED_EMAIL_SUFFIXES = %w{
+  PROHIBITED_EMAIL_DOMAINS = %w{
     .cn
     .kr
     .ru
+  }
+
+  GOOGLE_EMAIL_DOMAINS = %w{
+    gmail.com
+    googlemail.com
+    google.com
+  }
+
+  PROHIBITED_GOOGLE_PREFIXES = %w{
+    johnnyjohnson3445
+    ryangooseman2
+    jameswoodsiiiiv
+    martinelena086
   }
 
   # Cache the logged in and out PNG images in RAM; they're only small.
@@ -74,8 +87,16 @@ class AccountController < ApplicationController
     # be recognised properly otherwise.
     #
     unless request.post?
-      cookies.delete( 'hubapp_shared_id' )
-      cookies.delete( '_hub_session'     )
+      cookies.delete( 'hubapp_shared_id'       )
+      cookies.delete( '_hub_session'           )
+      cookies.delete( '_canvass_session'       )
+      cookies.delete( '_radiantapp_session_id' )
+      cookies.delete( '_instikiapp_session_id' )
+      cookies.delete( 'beastapp_session_id'    )
+      cookies.delete( 'typoapp_session_id'     )
+      cookies.delete( 'gulleryapp_session_id'  )
+      cookies.delete( 'collaboaapp_session_id' )
+      cookies.delete( 'rcvswebapp_session_id'  )
 
       session[:return_to_url] = return_to_url
       return
@@ -124,12 +145,20 @@ class AccountController < ApplicationController
 
   def create
     @user = User.new(allowed_user_params())
-    email = @user.email.downcase
 
-    # Prohibited domain / other simple "ends with" check fails? Bail out.
-    #
-    PROHIBITED_EMAIL_SUFFIXES.each do | suffix |
-      if email.end_with?(suffix)
+    if @user.email.present?
+      @user.email      = @user.email.strip()
+      lower_email      = @user.email.downcase()
+      is_prohibited    = PROHIBITED_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) }
+      is_google_domain =     GOOGLE_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) } unless is_prohibited
+
+      if is_google_domain
+        canonical_lower_email = lower_email.gsub('.', '')
+        lower_email_prefix    = canonical_lower_email.gsub(/[+@].*$/, '')
+        is_prohibited         = PROHIBITED_GOOGLE_PREFIXES.any? { | prefix | prefix == lower_email_prefix }
+      end
+
+      if is_prohibited
         hubssolib_set_flash(
           :attention,
           t('signup.blocked', institution_name_short: INSTITUTION_NAME_SHORT)
