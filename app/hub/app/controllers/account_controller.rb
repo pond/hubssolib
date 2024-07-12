@@ -78,7 +78,7 @@ class AccountController < ApplicationController
   #
   def login
     @title        = 'Log in'
-    return_to_url = hubssolib_get_return_to() || session[:return_to_url]
+    return_to_url = params[:return_to_url] || hubssolib_get_return_to() || session[:return_to_url]
 
     session.delete(:return_to_url)
 
