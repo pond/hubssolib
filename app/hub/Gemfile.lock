@@ -102,6 +102,9 @@ GEM
     connection_pool (2.4.1)
     crass (1.0.6)
     date (3.3.4)
+    debug (1.9.2)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
     drb (2.2.1)
     duktape (2.7.0.0)
     erubi (1.13.0)
@@ -293,6 +296,7 @@ DEPENDENCIES
   bcrypt (~> 3.1.7)
   capybara (>= 2.15)
   coffee-rails (~> 4.2)
+  debug
   duktape
   hubssolib (~> 2.0)
   invisible_captcha (~> 2.3)
