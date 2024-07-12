@@ -427,7 +427,7 @@ module HubSsoLib
     # The returned object is proxied via DRb - it is shared between processes.
     #
     # +key+::       Session key; lazy-initialises a new session under this key
-    #               if none is found, then immeediately rotates it.
+    #               if none is found, then immediately rotates it.
     #
     # +remote_ip+:: Request's remote IP address. If there is an existing
     #               session which matches this, it's returned. If there is an
