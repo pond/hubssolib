@@ -4,9 +4,11 @@
 
         <p />
         All personal details stored in your account can be edited below, except for
-        your e-mail address. To change address, you must delete your old account and
-        create a new one. This is required so that the proper account activation
-        process is followed for any new e-mail address.
+        your e-mail address. To change address, either <strong>contact
+        <%= INSTITUTION_NAME_LONG %> at <%= mail_to(INSTITUTION_NAME_EMAIL) %></strong>
+        or, if you want to handle things yourself, delete your old account and create
+        a new one. This is required so that the proper account activation process
+        is followed for any new e-mail address.
 
         <p />
         <%= render "shared/error_messages", :target => @user %>

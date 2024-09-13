@@ -10,7 +10,7 @@
     <title><%= INSTITUTION_NAME_LONG %>: Single sign-on: <%= @title %></title>
   </head>
   <body>
-<%= render 'shared/fixed_header' %>
+    <%= render 'shared/fixed_header' %>
 
     <div id="template_main">
 
@@ -18,10 +18,10 @@
 
       <div id="template_body">
         <div id="template_body_content">
-          <%= apphelp_flash() unless @service_fault -%>
+          <%= apphelp_flash() unless @service_fault %>
 
           <div class="content">
-<%= yield %>
+            <%= yield %>
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@
           </div>
 
           <p />
-<%= render 'shared/fixed_sidebar' %>
+          <%= render 'shared/fixed_sidebar' %>
 
         </div>
       </div>
@@ -52,6 +52,6 @@
       <div id="template_main_block_end"></div>
     </div>
 
-<%= render 'shared/fixed_footer' %>
+    <%= render 'shared/fixed_footer' %>
   </body>
 </html>
