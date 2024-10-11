@@ -23,6 +23,7 @@
 #
 INSTITUTION_NAME_LONG  = "RISC OS Open"
 INSTITUTION_NAME_SHORT = "ROOL"
+INSTITUTION_NAME_EMAIL = "info@riscosopen.org"
 
 # Maximum number of items to show per page in sortable list views.
 
