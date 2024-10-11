@@ -669,4 +669,13 @@ private
 
     return answer
   end
+
+  def spam_bail
+    hubssolib_set_flash(
+      :alert,
+      "Sorry, we didn't understand that sign-up attempt. Please try again."
+    )
+
+    redirect_to signup_account_path()
+  end
 end

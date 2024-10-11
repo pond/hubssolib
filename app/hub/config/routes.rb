@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   #
   resource :account, only: :create, controller: :account do
     get 'signup',              to: 'account#new' # (sic.)
+    get '',                    to: 'account#new' # (invisible Captcha uses this)
     get 'activate',            to: 'account#activate'
     get 'login_indication',    to: 'account#login_indication'
     get 'login_conditional',   to: 'account#login_conditional'
@@ -41,4 +42,5 @@ Rails.application.routes.draw do
     match 'edit_roles/:id', to: 'account#edit_roles', via: [:post, :patch], as: 'edit_roles'
     post  'destroy/:id',    to: 'account#destroy'
   end
+
 end
