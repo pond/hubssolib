@@ -32,12 +32,16 @@ module AccountHelper
   # object for which the actions should be generated.
   #
   def list_actions( user )
-    tag.td( :class => 'actions' ) do
+    tag.td(class: 'actions') do
       concat(
-        button_to('Details', { :action => 'show',    :id => user.id })
+        button_to('Details', { action: 'show', id: user.id })
       )
       concat(
-        button_to('Delete',  { :action => 'destroy', :id => user.id }, :confirm => "Are you absolutely sure you want to permanently delete this account?")
+        button_to(
+          'Delete',
+          { action: 'destroy', id: user.id },
+          confirm: "Are you absolutely sure you want to permanently delete this account?"
+        )
       )
     end
   end
@@ -52,8 +56,8 @@ module AccountHelper
     form.select(
       'roles_array',
       role_names.map { | role_name | [ HubSsoLib::Roles.get_display_name( role_name ), role_name ] },
-      { :include_hidden => false },
-      { :multiple => true }
+      { include_hidden: false },
+      { multiple:       true  }
     )
   end
 

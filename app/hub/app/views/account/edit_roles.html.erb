@@ -5,7 +5,7 @@
           database access would be needed to reassign the administrative roles.
 
           <p />
-          <%= form_for( @user, :method => 'post', :url => url_for( :controller => 'account', :action => 'edit_roles' ) ) do | form |%>
+          <%= form_for(@user, url: edit_roles_account_path(@user)) do | form |%>
             <table class="list" border="1" align="center" cellspacing="1" cellpadding="4">
               <tr valign="top">
                 <th bgcolor="#eeeeee">Address</th>

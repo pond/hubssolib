@@ -46,17 +46,19 @@ class AccountController < ApplicationController
   # Action permissions for this class as a class variable, exposed
   # to the public through a class method.
 
-  @@hubssolib_permissions = HubSsoLib::Permissions.new({
-                              :change_password => [ :admin, :webmaster, :privileged, :normal ],
-                              :change_details  => [ :admin, :webmaster, :privileged, :normal ],
-                              :delete          => [ :admin, :webmaster, :privileged, :normal ],
-                              :delete_confirm  => [ :admin, :webmaster, :privileged, :normal ],
-                              :list            => [ :admin, :webmaster, :privileged ],
-                              :enumerate       => [ :admin, :webmaster ],
-                              :show            => [ :admin, :webmaster ],
-                              :edit_roles      => [ :admin ],
-                              :destroy         => [ :admin ]
-                            })
+  @@hubssolib_permissions = HubSsoLib::Permissions.new(
+    {
+      :change_password => [ :admin, :webmaster, :privileged, :normal ],
+      :change_details  => [ :admin, :webmaster, :privileged, :normal ],
+      :delete          => [ :admin, :webmaster, :privileged, :normal ],
+      :delete_confirm  => [ :admin, :webmaster, :privileged, :normal ],
+      :list            => [ :admin, :webmaster, :privileged ],
+      :enumerate       => [ :admin, :webmaster ],
+      :show            => [ :admin, :webmaster ],
+      :edit_roles      => [ :admin ],
+      :destroy         => [ :admin ]
+    }
+  )
 
   def AccountController.hubssolib_permissions
     @@hubssolib_permissions
@@ -118,7 +120,7 @@ class AccountController < ApplicationController
       if return_to_url.present?
         redirect_to(return_to_url)
       else
-        redirect_to(:controller => 'tasks', :action => nil)
+        redirect_to(root_path())
       end
 
     else
@@ -133,7 +135,7 @@ class AccountController < ApplicationController
     @title = 'Log out'
     hubssolib_log_out()
     hubssolib_set_flash(:attention, 'You are now logged out.')
-    redirect_to :controller => 'tasks', :action => nil
+    redirect_to root_path()
   end
 
   def new
@@ -164,7 +166,7 @@ class AccountController < ApplicationController
           t('signup.blocked', institution_name_short: INSTITUTION_NAME_SHORT)
         )
 
-        redirect_to :controller => 'tasks', :action => nil
+        redirect_to root_path()
         return # NOTE EARLY EXIT
       end
     end
@@ -206,7 +208,7 @@ class AccountController < ApplicationController
         hubssolib_set_flash(:notice, t('signup.success_normal'))
       end
 
-      redirect_to :controller => 'tasks', :action => nil
+      redirect_to root_path()
 
     end
   end
@@ -228,7 +230,7 @@ class AccountController < ApplicationController
           )
         )
 
-        hubssolib_redirect_back_or_default(:controller => 'tasks', :action => nil)
+        hubssolib_redirect_back_or_default(root_path())
       else
         hubssolib_set_flash(
           :alert,
@@ -259,7 +261,7 @@ class AccountController < ApplicationController
         save_password_and_set_flash(user)
         self.hubssolib_current_user = from_real_user(user)
 
-        redirect_to :controller => 'tasks', :action => nil
+        redirect_to root_path()
       else
         set_password_mismatch_flash
         @old_password = params[:old_password]
@@ -282,7 +284,7 @@ class AccountController < ApplicationController
       self.hubssolib_current_user = from_real_user(@user)
 
       hubssolib_set_flash(:notice, 'Account details updated successfully.')
-      redirect_to :controller => 'tasks', :action => nil
+      redirect_to root_path()
     end
   end
 
@@ -302,7 +304,7 @@ class AccountController < ApplicationController
         'account password has been set to your e-mail address.'
       )
 
-      redirect_to :controller => 'tasks', :action => nil
+      redirect_to root_path()
     else
       hubssolib_set_flash(
         :alert,
@@ -315,7 +317,7 @@ class AccountController < ApplicationController
     @title = 'Reset password'
 
     if params[:id].nil?
-      hubssolib_redirect_back_or_default(:controller => 'tasks', :action => nil)
+      hubssolib_redirect_back_or_default(root_path())
       return
     end
 
@@ -329,7 +331,7 @@ class AccountController < ApplicationController
         'copying all of the link in the message however many lines it spans.'
       )
 
-      hubssolib_redirect_back_or_default(:controller => 'tasks', :action => nil)
+      hubssolib_redirect_back_or_default(root_path())
       return
     end
 
@@ -354,7 +356,7 @@ class AccountController < ApplicationController
       @user.reset_password
       save_password_and_set_flash(@user)
       self.hubssolib_current_user = from_real_user(@user)
-      redirect_to :controller => 'tasks', :action => nil
+      redirect_to root_path()
       return
     else
       set_password_mismatch_flash
@@ -374,7 +376,7 @@ class AccountController < ApplicationController
 
     hubssolib_clear_flash()
     hubssolib_set_flash(:attention, 'Your account has been deleted.')
-    redirect_to :controller => 'tasks', :action => nil
+    redirect_to root_path()
   end
 
   def list
@@ -440,7 +442,14 @@ class AccountController < ApplicationController
     @title    = 'User account details'
     @user     = User.find(params[:id])
     @referrer = request.referrer
-    @referrer = nil unless @referrer.present?
+
+    # This is usually accessed via the list which might be on any page. If
+    # we use 'referrer' (as the "show" view code does) in a "go back to list"
+    # option, then the page is maintained. But if we've just come from e.g.
+    # the "edit roles" form, the referrer would be the form URL which isn't
+    # what we want.
+    #
+    @referrer = nil unless @referrer&.include?(list_account_path())
   end
 
   def edit_roles
@@ -448,15 +457,16 @@ class AccountController < ApplicationController
 
     # We must have a valid ID
 
-    unless (request.post?) and (params[:id]) and (@user = User.find(params[:id]))
-      redirect_to :controller => 'tasks', :action => nil
+    unless (params[:id]) and (@user = User.find(params[:id]))
+      redirect_to root_path()
       return
     end
 
-    # If 'commit' is present, the form was submitted with details rather than
-    # visited from a list or account details view.
-
-    return unless (params[:commit])
+    # This is fetched via a protected (non-simple-spider) POST rather than GET
+    # for the form presentation, but form *submissions* - processed after this
+    # - use PATCH.
+    #
+    return unless request.patch?
 
     # Validate the result
 
@@ -546,10 +556,10 @@ class AccountController < ApplicationController
     if (hubssolib_ensure_https) # Redirect back to here using HTTPS, if not already
       if (hubssolib_logged_in?)
         hubssolib_store_location(nil)
-        redirect_to :controller => 'tasks', :action => nil
+        redirect_to root_path()
       else
         hubssolib_store_location(request.referrer)
-        redirect_to :action => 'login'
+        redirect_to login_account_path()
       end
     end
   end

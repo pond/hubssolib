@@ -36,11 +36,11 @@
 
           <p align="center">
             <%= form_tag 'list', :method => 'get' do %>
-            Search users: <%=   text_field_tag(:q, params[:q]) %>
-            <%  end %>
+              Search users: <%=   text_field_tag(:q, params[:q]) %>
+            <% end %>
           </p>
 
           <p>
             When you've finished managing accounts, you can
-            <%= link_to 'return to the control panel', :controller => 'tasks', :action => nil %>.
+            <%= link_to 'return to the control panel', root_path() %>.
           </p>

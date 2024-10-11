@@ -45,8 +45,11 @@ module ApplicationHelper
   def make_action_link(controller, action, width, height, text, uri = nil)
     if (uri.nil?)
 
-      html = link_to(image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
-                     {:controller => controller, :action => action}, :class => 'image')
+      html = link_to(
+        image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
+        { controller: controller, action: action },
+        class: 'image'
+      )
 
       unless (text.nil? or text.empty?)
         html << tag('br')
@@ -55,11 +58,15 @@ module ApplicationHelper
 
     else
 
-      html = content_tag("a", image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
-                         { :href => uri, :class => 'image' })
+      html = tag.a(
+        image_tag(image_path("#{controller}/#{action}.png"), :size => "#{width}x#{height}", :border => 0),
+        href: uri,
+        class: 'image'
+      )
+
       unless (text.nil? or text.empty?)
-        html << tag('br')
-        html << content_tag("a", text.html_safe, { :href => uri })
+        html << tag.br
+        html << tag.a(text.html_safe, href: uri)
       end
 
     end
