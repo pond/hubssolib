@@ -120,6 +120,7 @@ GEM
     marcel (1.0.4)
     matrix (0.4.2)
     mini_mime (1.1.5)
+    mini_portile2 (2.8.7)
     minitest (5.25.1)
     net-imap (0.4.16)
       date
@@ -131,6 +132,9 @@ GEM
     net-smtp (0.5.0)
       net-protocol
     nio4r (2.7.3)
+    nokogiri (1.16.7)
+      mini_portile2 (~> 2.8.2)
+      racc (~> 1.4)
     nokogiri (1.16.7-aarch64-linux)
       racc (~> 1.4)
     nokogiri (1.16.7-arm-linux)
@@ -242,6 +246,7 @@ PLATFORMS
   aarch64-linux
   arm-linux
   arm64-darwin
+  ruby
   x86-linux
   x86_64-darwin
   x86_64-linux
