@@ -14,10 +14,6 @@ ActiveRecord::Schema[7.2].define(version: 3) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "schema_info", id: false, force: :cascade do |t|
-    t.integer "version"
-  end
-
   create_table "users", id: :serial, force: :cascade do |t|
     t.text "email"
     t.string "crypted_password", limit: 40
