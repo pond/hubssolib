@@ -14,7 +14,7 @@
 
         <p />
         <%= form_for @user, :url => account_path(), :method => :post do |f| %>
-          <table class="listing horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
+          <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
               <td><%= f.text_field :email, { :size => 40, :maxlength => 200 } %></td>

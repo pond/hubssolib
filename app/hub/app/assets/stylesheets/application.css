@@ -38,19 +38,22 @@ div.pagination {
 
 /* Special Hub cases for listing tables */
 
-#template_body_content table.listing td.yes
+table.listing  td.yes,
+table.bordered td.yes
 {
   background-color: #dfd8;
   text-align: center;
 }
 
-#template_body_content table.listing td.no
+table.listing  td.no,
+table.bordered td.no
 {
   background-color: #fdb8;
   text-align: center;
 }
 
-#template_body_content table.listing td.expired
+table.listing  td.expired,
+table.bordered td.expired
 {
   background-color: #fdd8;
   text-align: center;
