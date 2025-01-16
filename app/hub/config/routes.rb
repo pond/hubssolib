@@ -30,15 +30,12 @@ Rails.application.routes.draw do
     # showing details of specific accounts and editing them, or deleting
     # specific accounts.
     #
-    # * The 'show' GET or POST is a style hack! A button is used in user lists
-    #   to POST there, but after e.g. 'edit_roles', there's a GET redirection.
-    #
     # * The 'edit_roles' form fetches via POST to protect against very crude
     #   web crawlers hitting it, but submits via PATCH.
     #
     get   'list',           to: 'account#list'
     get   'enumerate',      to: 'account#enumerate'
-    match 'show/:id',       to: 'account#show',       via: [:get, :post]
+    get   'show/:id',       to: 'account#show'
     match 'edit_roles/:id', to: 'account#edit_roles', via: [:post, :patch], as: 'edit_roles'
     post  'destroy/:id',    to: 'account#destroy'
   end

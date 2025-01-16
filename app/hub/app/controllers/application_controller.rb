@@ -12,6 +12,7 @@
 #######################################################################
 
 class ApplicationController < ActionController::Base
+  include Pagy::Backend
 
   protect_from_forgery # See ActionController::RequestForgeryProtection for details
 
@@ -23,24 +24,57 @@ class ApplicationController < ActionController::Base
   before_action :hubssolib_beforehand
   after_action  :hubssolib_afterwards
 
-private
-
-  # TODO: Happily this is all now outdated, with mailers using views etc.
-  # TODO: Fix ASAP.
-
-  # Rather annoyingly, ActionMailer templates have no knowledge of the context
-  # in which they are invoked, unlike normal view templates. This is strange
-  # and, at least for Hub, unhelpful. We could insist that the system installer
-  # configures some static value for the default host for links, but that's a
-  # horrible kludge - once the application is running it always knows its host
-  # via the "request" object.
+  # ============================================================================
+  # PROTECTED INSTANCE METHODS
+  # ============================================================================
   #
-  # This filter patches around this Rails hiccup by wasting a few CPU cycles on
-  # auto-setup of the e-mail host.
-  #
-  def set_email_host
-    unless ( ActionMailer::Base.default_url_options.has_key?( :host ) )
-      ActionMailer::Base.default_url_options[ :host ] = request.host_with_port
+  protected
+
+    # Run pagy() on a given ActiveRecord scope/collection, with a default
+    # limit of 20 items per page overridden by the 'default_limit' parameter,
+    # or by query parameter 'items', the latter taking precedence but being
+    # capped to a list size of 200 to keep server resource usage down.
+    #
+    # https://github.com/ddnexus/pagy
+    #
+    def pagy_with_params(scope:, default_limit: 20)
+      page = params[:page]&.to_i
+      page = 1 if page.blank? || page < 1
+
+      if default_limit == :all
+        pagy_options = { page: 1, limit: scope.count }
+      else
+        limit        = params[:items]&.to_i || default_limit
+        limit        = limit.clamp(1, 200)
+        pagy_options = { page: page, limit: limit }
+      end
+
+      pagy(scope, **pagy_options)
     end
-  end
+
+  # ============================================================================
+  # PRIVATE INSTANCE METHODS
+  # ============================================================================
+  #
+  private
+
+    # TODO: Happily this is all now outdated, with mailers using views etc.
+    # TODO: Fix ASAP!
+    #
+    # Rather annoyingly, ActionMailer templates have no knowledge of the context
+    # in which they are invoked, unlike normal view templates. This is strange
+    # and, at least for Hub, unhelpful. We could insist that the system installer
+    # configures some static value for the default host for links, but that's a
+    # horrible kludge - once the application is running it always knows its host
+    # via the "request" object.
+    #
+    # This filter patches around this Rails hiccup by wasting a few CPU cycles on
+    # auto-setup of the e-mail host.
+    #
+    def set_email_host
+      unless ( ActionMailer::Base.default_url_options.has_key?( :host ) )
+        ActionMailer::Base.default_url_options[ :host ] = request.host_with_port
+      end
+    end
+
 end

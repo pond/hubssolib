@@ -5,43 +5,6 @@
 
 @import url("https://www.riscosopen.org/css/risc_os_open_2025.css");
 
-/* Account listings */
-
-table.list
-{
-  border-collapse: collapse;
-  border: 1px solid #6E915E;
-}
-
-table.list tr.odd
-{
-  background-color: #f8fff8;
-}
-
-table.list td.yes
-{
-  background-color: #DFD;
-  text-align: center;
-}
-
-table.list td.no
-{
-  background-color: #FDB;
-  text-align: center;
-}
-
-table.list td.expired
-{
-  background-color: #FDD;
-  text-align: center;
-}
-
-table.list td.actions
-{
-  background-color: #DDD;
-  text-align: center;
-}
-
 /* Button-based dangerous action links */
 
 table td.dangerous img,
@@ -50,18 +13,6 @@ table td.dangerous input[type='image']
   border: 2px solid #966;
   background: #fee;
   margin: 1px;
-}
-
-form.button-to input
-{
-  margin-top: 4px;
-}
-
-table.list form.button-to input
-{
-  font-size: 80%;
-  margin-top: 4px;
-  width: 100%;
 }
 
 table td input[type='image']
@@ -79,17 +30,31 @@ div.content a.image:hover
   border: none;
 }
 
-/* Paginated navigation */
+/* Centralised Pagy navigation */
 
-p.paginator
-{
-  font-size: small;
-  font-weight: bold;
+div.pagination {
+  text-align: center;
 }
 
-p.paginator span.disabled
+/* Special Hub cases for listing tables */
+
+#template_body_content table.listing td.yes
 {
-  color: #bbb;
+  background-color: #dfd8;
+  text-align: center;
+}
+
+#template_body_content table.listing td.no
+{
+  background-color: #fdb8;
+  text-align: center;
+}
+
+#template_body_content table.listing td.expired
+{
+  background-color: #fdd8;
+  text-align: center;
+  font-weight: bold;
 }
 
 /* Exception handling */

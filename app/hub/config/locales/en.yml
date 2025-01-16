@@ -1,7 +1,3 @@
-# Files in the config/locales directory are used for internationalization
-# and are automatically loaded by Rails. If you want to use locales other
-# than English, add the necessary files in this directory.
-
 en:
   signup:
     blocked:        "Due to overwhelming spam volumes from some locations, self-signups for those locations are blocked. Please contact %{institution_name_short} for assistance."
@@ -13,3 +9,8 @@ en:
   activate:
     activated:      "Your %{institution_name_long} web site account is now active."
     failed:         "Unable to activate your %{institution_name_long} web site account. Is the activation code correct, or has it already been used? If in doubt please try to sign up again. Contact %{institution_name_short} if you keep having trouble."
+
+  pagination:
+    choice: "or %{all_link}"
+    all: "list all"
+    paginated: "show pages"

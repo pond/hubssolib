@@ -11,10 +11,7 @@
 #          11-Apr-2020 (ADH): Rewrote #signup (as #new and #create).  #
 #######################################################################
 
-require 'will_paginate/array'
-
 class AccountController < ApplicationController
-
   layout 'application'
 
   invisible_captcha only: :create, honeypot: :birth_year, on_spam: :spam_bail
@@ -384,58 +381,38 @@ class AccountController < ApplicationController
   def list
     scope  = User.all
     @title = 'List of user accounts'
-
-    # Page zero means 'all'.
-
-    if (params.has_key?(:page) && params[:page] == '0' )
-      page     = 1
-      per_page = User.count
-    else
-      page     = params[:page]
-      per_page = 20
-    end
-
     search = params[:q]
 
     if (search.present?)
-      text  = "%#{ search }%"
+      text  = "%#{ ActiveRecord::Base.sanitize_sql_like(search) }%"
       scope = scope.where("real_name ILIKE ? OR email ILIKE ?", text, text)
     end
 
-    @users = scope.paginate(
-      :page     => page,
-      :per_page => per_page
-    ).order( 'created_at DESC' )
+    scope = scope.order('created_at DESC')
+    limit = params[:page] == 'all' ? :all : 20
+
+    @user_pages, @users = pagy_with_params(scope: scope, default_limit: limit)
   end
 
   # Enumerate active users (those users known to the DRb server).
   #
   def enumerate
     @title = 'Active users'
-    @users = hubssolib_enumerate_users
-    @users = [] if @users.nil?
+
+    users = hubssolib_enumerate_users
+    users = [] if users.nil?
 
     # Map the user objects returned from the HubSsoLib Gem to
-    # internal users.
+    # internal user IDs.
+    #
+    users.map! { |user| to_real_user(user, true)&.id }
+    users.compact!
+    users.uniq!
 
-    @users.map! { |user| to_real_user(user, true) }
-    @users.compact!
-
-    # Page number zero is magic; it indicates "all items".
-
-    if (params.has_key?(:page) && params[:page] == '0' )
-      page     = 1
-      per_page = @users.count
-    else
-      page     = params[:page]
-      per_page = 20
-    end
-
-    @users.sort! { | x, y | y.created_at <=> x.created_at }
-    @users = @users.paginate(
-      :page     => page,
-      :per_page => per_page
-    )
+    # Turn that into an ordered ActiveRecord::Relation.
+    #
+    scope = User.where(id: users).order('created_at DESC')
+    @user_pages, @users = pagy_with_params(scope: scope)
   end
 
   # Show details of a specific user account.

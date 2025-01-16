@@ -3,7 +3,7 @@
 
           <p />
           <%= form_tag(login_account_path()) do %>
-            <table class="list" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
+            <table class="listing horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
               <tr>
                 <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
                 <td><%= text_field_tag 'email', @email, size: 40, maxlength: 256, autocomplete: 'username', autofocus: true %></td>

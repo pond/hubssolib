@@ -1,6 +1,7 @@
 require 'hub_sso_lib'
 
 module ApplicationHelper
+  include Pagy::Frontend
 
   # Turn the Hub and Rails flash data into a simple series of H2 entries,
   # with Hub data first, Rails flash data next. A container DIV will hold
@@ -26,6 +27,23 @@ module ApplicationHelper
         concat( tag.h2( value, :class => "flash #{ key }" ) )
       end
     end
+  end
+
+  # A custom Pagy navigator to allow the special case of an "all" link, since
+  # listing all users can be handy sometimes! If used for admin-only features,
+  # so we're not so worried about users hammering the server unnecessarily.
+  #
+  def custom_pagy_nav(pagy)
+    nav       = pagy_nav(pagy)
+    generator = pagy_anchor(pagy)
+    link      = if params[:page] == 'all'
+      generator.call(1, t('pagination.paginated'))
+    else
+      generator.call(:all, t('pagination.all'))
+    end
+
+    choice = t('pagination.choice', all_link: link)
+    return "#{nav} #{choice}"
   end
 
   # Make a link to the given controller and action, using an image based on the

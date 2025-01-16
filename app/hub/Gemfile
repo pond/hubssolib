@@ -17,9 +17,11 @@ gem 'sprockets-rails', :require => 'sprockets/railtie'
 # Use Uglifier as compressor for JavaScript assets
 gem 'uglifier', '>= 1.3.0'
 
+# Easy pagination [https://rubygems.org/gems/pagy]
+gem 'pagy', '~> 9.0'
+
 gem 'duktape'
 gem 'tzinfo-data'
-gem 'will_paginate',     '~> 4.0'
 gem 'hubssolib',         '~> 2.0', :require => 'hub_sso_lib'
 gem 'invisible_captcha', '~> 2.3'
 gem 'rails-observers'

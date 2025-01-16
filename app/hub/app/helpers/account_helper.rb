@@ -33,16 +33,16 @@ module AccountHelper
   #
   def list_actions( user )
     tag.td(class: 'actions') do
-      concat(
-        button_to('Details', { action: 'show', id: user.id })
-      )
-      concat(
-        button_to(
-          'Delete',
-          { action: 'destroy', id: user.id },
-          confirm: "Are you absolutely sure you want to permanently delete this account?"
+      tag.div(class: 'simple_flex_row space_around') do
+        concat(link_to('Details', action: 'show', id: user.id))
+        concat(
+          button_to(
+            'Delete',
+            { action: 'destroy', id: user.id },
+            { data: { confirm: "Are you absolutely sure you want to permanently delete this account?" } }
+          )
         )
-      )
+      end
     end
   end
 
