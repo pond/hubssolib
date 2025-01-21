@@ -255,6 +255,11 @@ class AccountController < ApplicationController
 
     return unless request.post? # NOTE EARLY EXIT
 
+    if params[:password].blank? || params[:password_confirmation].blank?
+      hubssolib_set_flash(:alert, 'Please enter both a new password and a password confirmation.')
+      return # NOTE EARLY EXIT
+    end
+
     if User.authenticate(@user.email, params[:old_password])
       @user.password_confirmation = params[:password_confirmation]
       @user.password              = params[:password]
@@ -623,7 +628,7 @@ private
   def set_password_bad_flash
     hubssolib_set_flash(
       :alert,
-      "The password differed from the password confirmation, or was too short (it must be at least #{User::MIN_PW_LENGTH} letters long, or longer)."
+      "The password differed from the password confirmation, or was too short. Passwords must be at least #{User::MIN_PW_LENGTH} letters long."
     )
   end
 
