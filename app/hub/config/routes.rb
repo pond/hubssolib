@@ -21,10 +21,10 @@ Rails.application.routes.draw do
     match :change_password,    to: 'account#change_password', via: [:get, :post]
     match :forgot_password,    to: 'account#forgot_password', via: [:get, :post]
 
-    get  'reset_password/:id', to: 'account#reset_password'
-    post 'delete',             to: 'account#delete'
-    post 'delete_confirm',     to: 'account#delete_confirm'
-    get  'logout',             to: 'account#logout'
+    match 'reset_password/:id', to: 'account#reset_password', via: [:get, :post]
+    post  'delete',             to: 'account#delete'
+    post  'delete_confirm',     to: 'account#delete_confirm'
+    get   'logout',             to: 'account#logout'
 
     # Administrator actions - listing known users, enumerating active users,
     # showing details of specific accounts and editing them, or deleting
