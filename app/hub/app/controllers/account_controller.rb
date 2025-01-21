@@ -291,7 +291,7 @@ class AccountController < ApplicationController
     @title = 'Forgotten password'
     return unless request.post?
 
-    @user = User.where("LOWER(email) = ?", params[:email].downcase]).first
+    @user = User.where("LOWER(email) = ?", params[:email]&.downcase).first
 
     unless @user.nil?
       @user.forgot_password
