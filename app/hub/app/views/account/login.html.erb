@@ -6,11 +6,11 @@
             <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
               <tr>
                 <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
-                <td><%= text_field_tag 'email', @email, size: 40, maxlength: 256, autocomplete: 'username', autofocus: true %></td>
+                <td><%= text_field_tag 'email', @email, size: 40, maxlength: User::MAX_PW_LENGTH, autocomplete: 'username', autofocus: true %></td>
               </tr>
               <tr>
                 <th bgcolor="#eeeeee" align="left"><label for="password">Password</label></th>
-                <td><%= password_field_tag 'password', '', size: 40, maxlength: 256, autocomplete: 'current-password' %></td>
+                <td><%= password_field_tag 'password', '', size: 40, maxlength: User::MAX_PW_LENGTH, autocomplete: 'current-password' %></td>
               </tr>
             </table>
 

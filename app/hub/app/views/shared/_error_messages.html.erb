@@ -1,13 +1,12 @@
-<%
-# https://coderwall.com/p/mzeenq/showing-errors-messages-in-rails-4
-%>
+<%# https://coderwall.com/p/mzeenq/showing-errors-messages-in-rails-4 %>
+
 <% if target&.errors&.any? %>
-<div class="error_explanation">
-  <h2><%= pluralize(target.errors.count, "error") %> prevented this record from being saved:</h2>
-  <ul>
-  <% target.errors.full_messages.each do |msg| %>
-    <li><%= msg %></li>
-  <% end %>
-  </ul>
-</div>
+  <div class="error_messages">
+    <h2><%= pluralize(target.errors.count, "error") %> found in the form:</h2>
+    <ul>
+    <% target.errors.full_messages.each do |msg| %>
+      <li><%= msg %></li>
+    <% end %>
+    </ul>
+  </div>
 <% end %>

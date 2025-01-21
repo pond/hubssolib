@@ -10,24 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 3) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_21_033444) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "users", id: :serial, force: :cascade do |t|
     t.text "email"
-    t.string "crypted_password", limit: 40
-    t.string "salt", limit: 40
+    t.text "crypted_password"
+    t.text "salt"
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
-    t.string "remember_token", limit: 255
+    t.text "remember_token"
     t.datetime "remember_token_expires_at", precision: nil
-    t.string "activation_code", limit: 40
+    t.text "activation_code"
     t.datetime "activated_at", precision: nil
     t.text "roles"
     t.integer "member_id"
-    t.string "password_reset_code", limit: 40
+    t.text "password_reset_code"
     t.datetime "password_reset_code_expires_at", precision: nil
-    t.string "real_name", limit: 128
+    t.text "real_name"
   end
 end

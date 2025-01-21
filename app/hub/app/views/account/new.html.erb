@@ -7,32 +7,32 @@
         reasonably complete <b>real name</b> that you are happy being used in forum posts,
         documentation pages, welcome messages and so-on (e.g. "John Doe"). Your
         <b>password</b> can consist of any combination of letters, numbers and symbols
-        but must be at least four characters long.
+        but must be at least <%= User::MIN_PW_LENGTH %> characters long.
 
         <p />
-        <%= render "shared/error_messages", :target => @user %>
+        <%= render "shared/error_messages", target: @user %>
 
         <p />
-        <%= form_for @user, :url => account_path(), :method => :post do |f| %>
+        <%= form_for @user, url: account_path(), method: :post do |f| %>
           <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="email">E-mail address</label></th>
-              <td><%= f.text_field :email, { :size => 40, :maxlength => 200 } %></td>
+              <td><%= f.text_field :email, { size: 40, maxlength: User::MAX_MAIL_LENGTH } %></td>
             </tr>
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
               <td>
-                <%= f.text_field :real_name, { :size => 40, :maxlength => 128 } %>
-                <%= f.invisible_captcha :birth_year %>
+                <%= f.text_field :real_name, { size: 40, maxlength: User::MAX_NAME_LENGTH } %>
+                <%= f.invisible_captcha User::CAPTCHA_HONEYPOT %>
               </td>
             </tr>
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="password">Password</label></th>
-              <td><%= f.password_field :password, { :size => 40, :maxlength => 40 } %></td>
+              <td><%= f.password_field :password, { size: 40, maxlength: User::MAX_PW_LENGTH } %></td>
             </tr>
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="password_confirmation">Confirm password</label></th>
-              <td><%= f.password_field :password_confirmation, { :size => 40, :maxlength => 40 } %></td>
+              <td><%= f.password_field :password_confirmation, { size: 40, maxlength: User::MAX_PW_LENGTH } %></td>
             </tr>
             <tr>
               <td colspan="2">
@@ -62,5 +62,5 @@
 
         <p />
         If you don't want to do this, you can
-        <%= link_to 'go back to the control panel', :controller => 'tasks', :action => 'index' %>
+        <%= link_to 'go back to the control panel', controller: 'tasks', action: 'index' %>
         instead.

@@ -14,7 +14,7 @@
 class AccountController < ApplicationController
   layout 'application'
 
-  invisible_captcha only: :create, honeypot: :birth_year, on_spam: :spam_bail
+  invisible_captcha only: :create, honeypot: User::CAPTCHA_HONEYPOT, on_spam: :spam_bail
 
   PROHIBITED_EMAIL_DOMAINS = %w{
     .cn
@@ -145,6 +145,7 @@ class AccountController < ApplicationController
   end
 
   def create
+    params.delete(User::CAPTCHA_HONEYPOT)
     @user = User.new(allowed_user_params())
 
     if @user.email.present?
@@ -195,7 +196,6 @@ class AccountController < ApplicationController
     @user.save
 
     if @user.errors.present?
-      hubssolib_set_flash(:error, t('signup.form_errors'))
       render :new
 
     else
@@ -247,23 +247,24 @@ class AccountController < ApplicationController
     end
   end
 
+  # GET to render the form, POST to reset.
+  #
   def change_password
     @title = 'Change password'
-    return unless request.post?
+    @user  = to_real_user(self.hubssolib_current_user)
 
-    user = to_real_user(self.hubssolib_current_user)
+    return unless request.post? # NOTE EARLY EXIT
 
-    if User.authenticate(user.email, params[:old_password])
-      if (params[:password] == params[:password_confirmation])
-        user.password_confirmation = params[:password_confirmation]
-        user.password = params[:password]
-        save_password_and_set_flash(user)
-        self.hubssolib_current_user = from_real_user(user)
+    if User.authenticate(@user.email, params[:old_password])
+      @user.password_confirmation = params[:password_confirmation]
+      @user.password              = params[:password]
+      success                     = self.save_password_and_set_flash(@user)
 
+      if success
+        self.hubssolib_current_user = from_real_user(@user)
         redirect_to root_path()
       else
-        set_password_mismatch_flash
-        @old_password = params[:old_password]
+        self.set_password_bad_flash()
       end
     else
       hubssolib_set_flash(:alert, 'Incorrect current password.')
@@ -277,11 +278,11 @@ class AccountController < ApplicationController
 
     return unless request.post?
 
-    if (params[:real_name])
-      @user.real_name = @real_name = params[:real_name]
-      @user.save!
-      self.hubssolib_current_user = from_real_user(@user)
+    @user.real_name = @real_name = params[:real_name]
+    success = @user.save
 
+    if success
+      self.hubssolib_current_user = from_real_user(@user)
       hubssolib_set_flash(:notice, 'Account details updated successfully.')
       redirect_to root_path()
     end
@@ -296,28 +297,23 @@ class AccountController < ApplicationController
     unless @user.nil?
       @user.forgot_password
       @user.save!
-
-      hubssolib_set_flash(
-        :notice,
-        'An e-mail message which tells you how to reset your ' <<
-        'account password has been set to your e-mail address.'
-      )
-
-      redirect_to root_path()
-    else
-      hubssolib_set_flash(
-        :alert,
-        'No account was found for the given e-mail address.'
-      )
     end
+
+    hubssolib_set_flash(
+      :notice,
+      'If that account exists, then an e-mail message which tells you how to ' <<
+      'reset your password has been sent to you.'
+    )
   end
 
+  # GET to render the form, POST to reset.
+  #
   def reset_password
     @title = 'Reset password'
 
     if params[:id].nil?
       hubssolib_redirect_back_or_default(root_path())
-      return
+      return # NOTE EARLY EXIT
     end
 
     @user = User.find_by_password_reset_code(params[:id])
@@ -331,7 +327,7 @@ class AccountController < ApplicationController
       )
 
       hubssolib_redirect_back_or_default(root_path())
-      return
+      return # NOTE EARLY EXIT
     end
 
     t = Time.now.utc
@@ -344,22 +340,25 @@ class AccountController < ApplicationController
       return
     end
 
-    unless params[:password]
+    unless request.post?
       hubssolib_set_flash(:alert, 'Reset your password using the form below.')
-      return
+      return # NOTE EARLY EXIT
     end
 
-    if (params[:password] == params[:password_confirmation])
-      @user.password_confirmation = params[:password_confirmation]
-      @user.password = params[:password]
-      @user.reset_password
-      save_password_and_set_flash(@user)
+    # This will save the password if valid and clear the reset code, else it
+    # will leave @user marked with validation errors.
+    #
+    success = @user.attempt_password_reset(
+      params[:password],
+      params[:password_confirmation]
+    )
+
+    if success
+      self.save_password_and_set_flash(@user) # (a redundant, but harmless #save happens inside here)
       self.hubssolib_current_user = from_real_user(@user)
       redirect_to root_path()
-      return
     else
-      set_password_mismatch_flash
-      return
+      self.set_password_bad_flash()
     end
   end
 
@@ -610,22 +609,31 @@ private
   end
 
   def save_password_and_set_flash(user)
-    if ( user.save )
+    success = user.save()
+
+    if success
       hubssolib_set_flash(:notice, 'Your password has been changed.')
     else
-      hubssolib_set_flash(:alert, 'Sorry, your password could not be changed.')
+      self.set_password_bad_flash()
     end
+
+    return success
   end
 
-  def set_password_mismatch_flash
+  def set_password_bad_flash
     hubssolib_set_flash(
       :alert,
-      'The new password differed from the password confirmation you entered.'
+      "The password differed from the password confirmation, or was too short (it must be at least #{User::MIN_PW_LENGTH} letters long, or longer)."
     )
   end
 
   def allowed_user_params
-    params.require(:user).permit(:email, :real_name, :password, :password_confirmation)
+    params.require(:user).permit(
+      :email,
+      :real_name,
+      :password,
+      :password_confirmation
+    )
   end
 
   def set_maths_question

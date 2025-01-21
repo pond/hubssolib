@@ -11,14 +11,14 @@
         is followed for any new e-mail address.
 
         <p />
-        <%= render "shared/error_messages", :target => @user %>
+        <%= render "shared/error_messages", target: @user %>
 
         <%= form_tag do %>
           <p />
           <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
             <tr>
               <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
-              <td><%= text_field_tag 'real_name', @real_name, :size => 40, :maxlength => 128 %></td>
+              <td><%= text_field_tag 'real_name', @real_name, size: 40, maxlength: User::MAX_NAME_LENGTH %></td>
             </tr>
           </table>
 
@@ -28,5 +28,5 @@
 
         <p />
         If you don't want to do this, you can
-        <%= link_to 'go back to the control panel', :controller => 'tasks', :action => 'index' %>
+        <%= link_to 'go back to the control panel', controller: 'tasks', action: 'index' %>
         instead.

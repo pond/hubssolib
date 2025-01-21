@@ -40,7 +40,6 @@ module Hub
     config.time_zone = "UTC"
     config.active_record.default_timezone = :utc
 
-    config.active_record.observers = :user_observer
     config.hosts << "epsilon.arachsys.com"
 
     config.force_ssl = true if Rails.env.production?

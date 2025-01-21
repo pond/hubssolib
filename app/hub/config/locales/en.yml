@@ -2,7 +2,6 @@ en:
   signup:
     blocked:        "Due to overwhelming spam volumes from some locations, self-signups for those locations are blocked. Please contact %{institution_name_short} for assistance."
     wrong_answer:   "Sorry, that wasn't the right answer to the maths question! Please try again."
-    form_errors:    "Please make sure you fill in all of the form fields and that your two password entries match."
     success_admin:  "Thanks for signing up. You are now the system administrator and your account has been automatically activated."
     success_normal: "Thanks for signing up. Your new account MUST BE ACTIVATED before you can use it - please check your e-mail account for a message which tells you what you should do next. If nothing arrives in your inbox within a few minutes, please check your junk / spam mailbox, just in case."
 
