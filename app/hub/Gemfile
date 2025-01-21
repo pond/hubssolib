@@ -13,7 +13,7 @@ gem "puma", '~> 6.0'
 gem 'sprockets-rails', :require => 'sprockets/railtie'
 
 # Use Uglifier as compressor for JavaScript assets
-gem 'uglifier', '>= 4.2'
+gem 'uglifier', '~> 4.2'
 
 # Easy pagination [https://rubygems.org/gems/pagy]
 gem 'pagy', '~> 9.0'

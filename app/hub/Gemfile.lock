@@ -106,7 +106,8 @@ GEM
     invisible_captcha (2.3.0)
       rails (>= 5.2)
     io-console (0.8.0)
-    irb (1.14.3)
+    irb (1.15.0)
+      pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     logger (1.6.5)
@@ -149,6 +150,9 @@ GEM
       racc (~> 1.4)
     pagy (9.3.3)
     pg (1.5.9)
+    pp (0.6.2)
+      prettyprint
+    prettyprint (0.2.0)
     psych (5.2.3)
       date
       stringio
@@ -264,7 +268,7 @@ DEPENDENCIES
   selenium-webdriver
   sprockets-rails
   tzinfo-data
-  uglifier (>= 4.2)
+  uglifier (~> 4.2)
   web-console (~> 4.2)
   webdrivers
 
