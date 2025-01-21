@@ -1,13 +1,31 @@
-// This is a manifest file that'll be compiled into application.js, which will include all the files
-// listed below.
-//
-// Any JavaScript/Coffee file within this directory, lib/assets/javascripts, or any plugin's
-// vendor/assets/javascripts directory can be referenced here using a relative path.
-//
-// It's not advisable to add code directly here, but if you do, it'll appear at the bottom of the
-// compiled file. JavaScript code in this file should be added after the last require_* statement.
-//
-// Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
-// about supported directives.
-//
-//= require_tree .
+/* A very simple confirm prompt that hooks into any anchor or in-form button
+ * with "data-confirm: foo" specified. Visits the anchor HREF or submits the
+ * containing form (which must be an immediate parent node of the button) on
+ * confirmation.
+ */
+
+function confirmClick(element) {
+  element.addEventListener('click', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const proceed = window.confirm(element.dataset.confirm);
+
+    if (proceed) {
+      if (element.href) {
+        window.location.href = element.href;
+      } else {
+        const presumedFormElement = element.parentNode;
+        presumedFormElement.submit();
+      }
+    };
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function(event) {
+  const confirmationElements = document.querySelectorAll('[data-confirm]');
+
+  confirmationElements.forEach(function(confirmationElement, confirmationElementIndex, listObject) {
+    confirmClick(confirmationElement);
+  });
+});

@@ -9,7 +9,7 @@
 ########################################################################
 
 raise "Please make sure that the various options in " +
-      "'config/environments/#{ RAILS_ENV }.rb' "      +
+      "'config/environments/#{ Rails.env }.rb' "      +
       "and "                                          +
       "'config/initializers/40_general_settings.rb' " +
       "have been configured." if
