@@ -1,6 +1,5 @@
 coverage/
 hubssolib-*.gem
 .DS_Store
-.byebug_history
 server/log
 nohup.out

@@ -24,9 +24,12 @@ spec = Gem::Specification.new do |s|
   s.files = FileList['lib/**/*.rb', '[A-Z]*'].to_a
   s.required_ruby_version = '>= 2.5.9' # Not tested on earlier versions
 
-  s.add_development_dependency 'byebug',      '~> 11.1'
-  s.add_development_dependency 'simplecov',   '~>  0.16'
-  s.add_development_dependency 'doggo',       '~>  1.2'
-  s.add_development_dependency 'rspec',       '~>  3.8'
-  s.add_development_dependency 'rspec-mocks', '~>  3.8'
+  s.add_dependency 'drb',    '~> 2.2'
+  s.add_dependency 'base64', '~> 0.2'
+
+  s.add_development_dependency 'debug',       '~> 1.1'
+  s.add_development_dependency 'simplecov',   '~> 0.22'
+  s.add_development_dependency 'doggo',       '~> 1.4'
+  s.add_development_dependency 'rspec',       '~> 3.13'
+  s.add_development_dependency 'rspec-mocks', '~> 3.13'
 end

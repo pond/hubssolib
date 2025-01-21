@@ -2,8 +2,6 @@
 # Configure test environment
 # ============================================================================
 
-require 'byebug'
-
 # Configure the code coverage analyser
 
 require 'simplecov'
