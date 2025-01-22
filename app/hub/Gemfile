@@ -13,7 +13,7 @@ gem 'puma', '~> 6.0'
 gem 'propshaft', '~> 1.1'
 
 # Easy pagination [https://rubygems.org/gems/pagy]
-gem 'pagy', '~> 9.0'
+gem 'pagy', '~> 9.3'
 
 gem 'tzinfo-data'
 gem 'hubssolib',         '~> 2.1', :require => 'hub_sso_lib'
