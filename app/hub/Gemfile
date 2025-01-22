@@ -9,13 +9,15 @@ gem 'pg', '~> 1.5'
 # Use the Puma web server [https://github.com/puma/puma]
 gem 'puma', '~> 6.0'
 
+# For Windows or esoteric Unix/Linux-like distributions.
+gem 'tzinfo-data'
+
 # Simple asset management
 gem 'propshaft', '~> 1.1'
 
 # Easy pagination [https://rubygems.org/gems/pagy]
 gem 'pagy', '~> 9.3'
 
-gem 'tzinfo-data'
 gem 'hubssolib',         '~> 2.1', :require => 'hub_sso_lib'
 gem 'invisible_captcha', '~> 2.3'
 
