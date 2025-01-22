@@ -42,6 +42,13 @@ Rails.application.configure do
   # Set localhost to be used by links generated in mailer templates.
   # config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
 
+  # Support MailCatcher -  https://mailcatcher.me
+  #
+  if ENV['MAILCATCHER_ENABLED'].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = { :address => '127.0.0.1', :port => 1025 }
+  end
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 
