@@ -5,9 +5,13 @@ require "rails"
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
+# require "active_storage/engine"
 require "action_controller/railtie"
 require "action_mailer/railtie"
+# require "action_mailbox/engine"
+# require "action_text/engine"
 require "action_view/railtie"
+# require "action_cable/engine"
 require "rails/test_unit/railtie"
 
 # Require the gems listed in Gemfile, including any gems
@@ -45,29 +49,35 @@ module Hub
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
 
-    config.time_zone = "UTC"
+    config.time_zone = 'UTC'
     config.active_record.default_timezone = :utc
 
     # Add the shared ROOL view components.
     #
-    config.paths['app/views'].unshift(Rails.root.join('..', 'common', 'views'))
+    shared_views_path = if ENV['SHARED_VIEWS_PATH'].blank?
+      Rails.root.join('..', '..', '..', 'common', 'views')
+    else
+      ENV['SHARED_VIEWS_PATH']
+    end
+    config.paths['app/views'].unshift(shared_views_path)
 
-    # Allow requests to Epsilon.
+    # If running in a deployed environment, allow requests to Epsilon. Send
+    # e-mail via Beta, which is on the same local network.
     #
-    config.hosts << "epsilon.arachsys.com"
+    if Socket.gethostname == 'epsilon'
+      config.hosts << "epsilon.arachsys.com"
 
-    # Send e-mail via Beta, on the same local network.
-    #
-    config.action_mailer.delivery_method = :smtp
-    config.action_mailer.smtp_settings = {
-      address:        'beta.arachsys.com',
-      port:           25,
-      domain:         'riscosopen.org',
-      user_name:      nil,
-      password:       nil,
-      authentication: nil,
-      enable_starttls_auto: true
-    }
+      config.action_mailer.delivery_method = :smtp
+      config.action_mailer.smtp_settings = {
+        address:        'beta.arachsys.com',
+        port:           25,
+        domain:         'epsilon.arachsys.com',
+        user_name:      nil,
+        password:       nil,
+        authentication: nil,
+        enable_starttls_auto: true
+      }
+    end
 
   end
 end
