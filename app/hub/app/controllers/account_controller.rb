@@ -145,7 +145,7 @@ class AccountController < ApplicationController
   end
 
   def create
-    params.delete(User::CAPTCHA_HONEYPOT)
+    params[:user]&.delete(User::CAPTCHA_HONEYPOT)
     @user = User.new(allowed_user_params())
 
     if @user.email.present?
