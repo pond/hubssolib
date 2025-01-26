@@ -54,10 +54,10 @@ module Hub
 
     # Add the shared ROOL view components.
     #
-    shared_views_path = if ENV['SHARED_VIEWS_PATH'].blank?
+    shared_views_path = if ENV['SHARED_FILES_PATH'].blank?
       Rails.root.join('..', '..', '..', 'common', 'views')
     else
-      ENV['SHARED_VIEWS_PATH']
+      Rails.root.join(ENV['SHARED_FILES_PATH'], 'views')
     end
     config.paths['app/views'].unshift(shared_views_path)
 
