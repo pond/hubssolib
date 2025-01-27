@@ -149,6 +149,7 @@ GEM
     net-protocol (0.2.2)
       timeout
     net-smtp (0.5.0)
+    newrelic_rpm (9.16.1)
     nio4r (2.7.4)
     nokogiri (1.18.2)
       mini_portile2 (~> 2.8.2)
@@ -278,6 +279,7 @@ DEPENDENCIES
   hubssolib (~> 2.1)
   invisible_captcha (~> 2.3)
   mailcatcher
+  newrelic_rpm
   pagy (~> 9.3)
   pg (~> 1.5)
   propshaft (~> 1.1)
