@@ -22,11 +22,16 @@ if ENV['SENTRY_DSN'].present?
       config.profiles_sample_rate = 1.0
     end
 
-    # Filter out secrets. Since config/initializers runs in alphabetical order,
+    # https://docs.sentry.io/platforms/ruby/guides/rails/configuration/filtering/
+    #
+    # Since config/initializers runs in alphabetical order,
     # "filter_parameter_logging.rb" runs before "sentry.rb".
     #
     filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
-    config.before_send = lambda { |event, _hint| { filter.filter(event.to_hash) }
+
+    config.before_send = lambda do |event, hint|
+      filter.filter(event.to_hash)
+    end
   end
 else
   Sentry.init do |config|
