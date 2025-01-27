@@ -1,36 +1,54 @@
 source 'https://rubygems.org'
 
-# Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 8.0'
 
 # Use PostgreSQL
+#
 gem 'pg', '~> 1.5'
 
 # Use the Puma web server [https://github.com/puma/puma]
+#
 gem 'puma', '~> 6.0'
 
 # For Windows or esoteric Unix/Linux-like distributions.
+#
 gem 'tzinfo-data'
 
 # Simple asset management
+#
 gem 'propshaft', '~> 1.1'
 
 # Easy pagination [https://rubygems.org/gems/pagy]
+#
 gem 'pagy', '~> 9.3'
 
-gem 'hubssolib',         '~> 2.1', :require => 'hub_sso_lib'
+# Invisible sign-in protection against bots (marginally effective) [https://rubygems.org/gems/invisible_captcha]
+#
 gem 'invisible_captcha', '~> 2.3'
 
-# Monitoring and alerting [http://rubygems.org/gems/newrelic_rpm]
-gem 'newrelic_rpm'
+# Use Hub for authentication, obviously ;-) [https://github.com/pond/hubssolib]
+#
+gem 'hubssolib', '~> 2.1', :require => 'hub_sso_lib'
+
+# Monitoring and alerting [http://sentry.io]
+#
+# * https://rubygems.org/gems/stackprof
+# * https://rubygems.org/gems/sentry-ruby
+# * https://rubygems.org/gems/sentry-rails
+#
+gem 'stackprof'
+gem 'sentry-ruby'
+gem 'sentry-rails'
 
 group :development, :test do
+
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  #
   gem 'debug', platforms: %i[ mri windows ]
+
 end
 
 group :development do
-  gem 'error_highlight', '>= 0.4.0', platforms: [:ruby]
 
   # Use console on exceptions pages [https://github.com/rails/web-console]
   #
@@ -43,13 +61,18 @@ group :development do
   # E-mail inspection.
   #
   gem 'mailcatcher'
+
 end
 
 group :test do
+
   # Adds support for Capybara system testing and selenium driver
+  #
   gem 'capybara', '~> 3.4'
   gem 'selenium-webdriver'
 
   # Easy installation and use of chromedriver to run system tests with Chrome
+  #
   gem 'webdrivers'
+
 end
