@@ -24,7 +24,7 @@ class AccountController < ApplicationController
   require 'hub_sso_lib'
   include HubSsoLib::Core
 
-  before_action :hubssolib_ensure_https, except: :login_indication
+  before_action :hubssolib_ensure_https
   invisible_captcha only: :create, honeypot: User::CAPTCHA_HONEYPOT, on_spam: :spam_bail
 
   PROHIBITED_EMAIL_DOMAINS = %w{

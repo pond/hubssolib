@@ -1,3 +1,7 @@
+## 3.0.0 (28-Jan-2022)
+
+Updated for Hub gem version 3.0.0, with removal of `login_indication` endpoint and related resources.
+
 ## 2.1.1 (01-Jul-2021)
 
 Maintenance update - requires Hub gem version 2.1.0.
