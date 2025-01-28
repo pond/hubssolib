@@ -105,7 +105,9 @@ GEM
     foreman (0.88.1)
     globalid (1.2.1)
       activesupport (>= 6.1)
-    hubssolib (2.1.0)
+    hubssolib (3.0.0)
+      base64 (~> 0.2)
+      drb (~> 2.2)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     invisible_captcha (2.3.0)
@@ -280,7 +282,7 @@ DEPENDENCIES
   capybara (~> 3.4)
   debug
   foreman
-  hubssolib (~> 2.1)
+  hubssolib (~> 3.0)
   invisible_captcha (~> 2.3)
   mailcatcher
   pagy (~> 9.3)

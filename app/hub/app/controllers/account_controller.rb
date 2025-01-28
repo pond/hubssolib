@@ -14,6 +14,17 @@
 class AccountController < ApplicationController
   layout 'application'
 
+  # HTTPS enforcement for all methods, except the login indicator; if someone
+  # is on an HTTP page, the login indicator needs to be fetched by HTTP too so
+  # it can show "logged out" as the secure-only cookies won't get sent. It is
+  # very confusing to be on an HTTP page, apparently fetching the indicator by
+  # HTTP, only to have the image fetch quietly redirect behind the scenes, go
+  # to HTTPS, and say you're logged in - when everyone else thinks you're not.
+
+  require 'hub_sso_lib'
+  include HubSsoLib::Core
+
+  before_action :hubssolib_ensure_https, except: :login_indication
   invisible_captcha only: :create, honeypot: User::CAPTCHA_HONEYPOT, on_spam: :spam_bail
 
   PROHIBITED_EMAIL_DOMAINS = %w{
@@ -35,15 +46,10 @@ class AccountController < ApplicationController
     martinelena086
   }
 
-  # Cache the logged in and out PNG images in RAM; they're only small.
-
-  @@logged_in_image  = File.read("#{Rails.root}/app/assets/images/icons/logged_in.png")
-  @@logged_out_image = File.read("#{Rails.root}/app/assets/images/icons/logged_out.png")
-
   # Action permissions for this class as a class variable, exposed
   # to the public through a class method.
-
-  @@hubssolib_permissions = HubSsoLib::Permissions.new(
+  #
+  HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new(
     {
       :change_password => [ :admin, :webmaster, :privileged, :normal ],
       :change_details  => [ :admin, :webmaster, :privileged, :normal ],
@@ -57,21 +63,9 @@ class AccountController < ApplicationController
     }
   )
 
-  def AccountController.hubssolib_permissions
-    @@hubssolib_permissions
+  def self.hubssolib_permissions
+    HUBSSOLIB_PERMISSIONS
   end
-
-  # HTTPS enforcement for all methods, except the login indicator; if someone
-  # is on an HTTP page, the login indicator needs to be fetched by HTTP too so
-  # it can show "logged out" as the secure-only cookies won't get sent. It is
-  # very confusing to be on an HTTP page, apparently fetching the indicator by
-  # HTTP, only to have the image fetch quietly redirect behind the scenes, go
-  # to HTTPS, and say you're logged in - when everyone else thinks you're not.
-
-  require 'hub_sso_lib'
-  include HubSsoLib::Core
-
-  before_action :hubssolib_ensure_https, :except => :login_indication
 
   # The "proper" login method
   #
@@ -511,27 +505,11 @@ class AccountController < ApplicationController
     redirect_to :action => 'list'
   end
 
-  # The login_indication method is unusual; it returns data for an image,
-  # with no-cache parameters set, to indicate whether or not the user is
-  # logged in. It does not render a view.
+  # Typically only used via the HubSsoLib::Core#hubssolib_account_link helper.
   #
-  # The idea is that a caller which caches HTML can include an image tag
-  # that points its source data to this method; the image will be updated
-  # even if the HTML stays cached.
-  #
-  def login_indication
-    headers['Pragma']        = 'no-cache'
-    headers['Cache-Control'] = 'no-cache, must-revalidate'
-
-    send_data hubssolib_logged_in? ? @@logged_in_image : @@logged_out_image,
-              :type        => 'image/png',
-              :disposition => 'inline'
-  end
-
-  # A supporting unusual method is login_conditional, which redirects to
-  # the login page if the user is logged out or the tasks page if the user
-  # is logged in. It explicitly clears a return-to link, if there is one,
-  # so that the user doesn't drop out of Hub. This is useful if the page
+  # Redirects to the login page if the user is logged out or the tasks page if
+  # the user is logged in. It explicitly clears a return-to link, if there is
+  # one, so that the user doesn't drop out of Hub. This is useful if the page
   # from which the user came cannot support (for example) the Flash display
   # because of, say, caching.
   #

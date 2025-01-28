@@ -28,7 +28,7 @@ gem 'invisible_captcha', '~> 2.3'
 
 # Use Hub for authentication, obviously ;-) [https://github.com/pond/hubssolib]
 #
-gem 'hubssolib', '~> 2.1', :require => 'hub_sso_lib'
+gem 'hubssolib', '~> 3.0', require: 'hub_sso_lib'
 
 # # Monitoring and alerting [http://rubygems.org/gems/newrelic_rpm]
 # #
