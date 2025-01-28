@@ -518,6 +518,27 @@ module HubSsoLib
       !!self.hubssolib_current_user
     end
 
+    # Returns markup for a link that leads to Hub's conditional login endpoint,
+    # inline-styled as a red "Log in" or green "Account" button. This can be
+    # used in page templates to avoid needing any additional images or other
+    # such resources and using pure HTML + CSS for the login indication.
+    #
+    def hubssolib_account_link
+      logged_in = self.hubssolib_logged_in?()
+
+      text, klass, style = if logged_in
+        ['Account', 'hubssolib_logged_in',  'border: 1px solid #050; color: #050; background: #efe;']
+      else
+        ['Log in',  'hubssolib_logged_out', 'border: 1px solid #500; color: #500; background: #fee;']
+      end
+
+      style << ' display: block; width: 88px; height; 20px;'
+      style << ' text-align: center; line-height: 20px;'
+      style << ' font: sans-serif; font-size: 10pt'
+
+      "<a href=\"#{HUB_PATH_PREFIX}/account/login_conditional\" class=\"#{klass}\" style=\"#{style}\">#{text}</a>".html_safe()
+    end
+
     # Check if the user is authorized to perform the current action. If calling
     # from a helper, pass the action name and class name; otherwise by default,
     # the current action name and 'self.class' will be used.
@@ -855,6 +876,7 @@ module HubSsoLib
                 :hubssolib_current_user,
                 :hubssolib_unique_name,
                 :hubssolib_logged_in?,
+                :hubssolib_account_link,
                 :hubssolib_authorized?,
                 :hubssolib_privileged?,
                 :hubssolib_flash_data

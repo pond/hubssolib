@@ -24,28 +24,10 @@ The latest version of the Hub gem source code is available at:
 
 ### The Hub library gem
 
-First of all, download and unpack the Hub gem sources. Change into the source directory (usually, `rails/gems/hubssolib`) and build with:
-
-```sh
-gem build hubssolib.gemspec
-```
-
-Install the Hub gem using the `gem` command in the usual fashion. For example, for version 1.0.0 of the library, issue the following command:
-
-```sh
-gem install hubssolib-1.0.0.gem
-```
-
-If you run multiple gem repositories you can instruct `gem` to install into a specific location using the `--install-dir` command line switch:
-
-```sh
-gem install hubssolib-1.0.0.gem --install-dir=/home/username/gems
-```
-
 Include in a project by adding this to your `Gemfile`:
 
 ```ruby
-gem 'hubssolib', '~> 1.0.0', :require => 'hub_sso_lib'
+gem 'hubssolib', '~> 3.0', require: 'hub_sso_lib'
 ```
 
 ### The DRb server
@@ -55,7 +37,7 @@ The Hub DRb server consists of a small wrapper Ruby script which does most of it
 ```sh
 HUB_CONNECTION_URI="drbunix:/home/username/sockets/.hub_drb"
 export HUB_CONNECTION_URI
-ruby /home/username/hub/hub_sso_server.rb &
+ruby /home/username/hubssolib/hub_sso_server.rb &
 ```
 
 The default is to use a file `.hub_drb` in the root of the current user's home directory. If you specify a custom URI, note that it _MUST_ start with `drbunix:`; the hub server must not be run on an IP port for security reasons.

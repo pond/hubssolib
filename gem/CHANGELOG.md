@@ -1,9 +1,33 @@
+## 3.0.0, 28-Jan-2025
+
+* The Hub "login indication" URL approach is now dropped, so layout templates **must be updated.**
+
+In Hub v1 and v2, login indication was done via an image that was served by the Hub application itself, wrapped in a link that visited a "conditional login" endpoint which stored the return-to URL, ensured HTTPS was in use and visited either the log in, or log out page as required. In client applications it looked a bit like this:
+
+```html
+  <a class="img" href="<%= ENV['HUB_PATH_PREFIX'] %>/account/login_conditional">
+    <img src="<%= ENV['HUB_PATH_PREFIX'] %>/account/login_indication" alt="Account" height="22" width="90" />
+  </a>
+```
+
+This dates back to a time when CSS support was not that widespread and RISC OS Open needed the web site to work well on web browsers available at the time. Things have improved enormously since then, so now a cleaner, pure CSS solution is used. This has the enormous advantage of requiring no image fetch request-response into the Hub application. Just use:
+
+```ruby
+<%= hubssolib_account_link() %>
+```
+
+...in place of the markup above.
+
+
+
 ## 2.1.0, 01-Jul-2022
 
 * Use `HUB_QUIET_SERVER=yes ...` to quieten `$stdout` output from Hub server.
 * Test coverage fixed (overlooked in v2.0.0 release).
 * Maintenance `bundle update`.
 * A few minor tidy-ups in the implementation.
+
+
 
 ## Version 1.0.0 -> Version 2.0.0, 19-Apr-2020
 

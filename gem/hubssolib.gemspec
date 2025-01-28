@@ -4,10 +4,10 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name     = 'hubssolib'
 
-  s.version  = '2.1.0'
+  s.version  = '3.0.0'
   s.author   = 'Andrew Hodgkinson and others'
   s.email    = 'ahodgkin@rowing.org.uk'
-  s.homepage = 'http://hub.pond.org.uk/'
+  s.homepage = 'http://pond.org.uk/'
   s.summary  = 'Cross-application single sign-on support library.'
   s.license  = 'MIT'
 
@@ -22,7 +22,7 @@ spec = Gem::Specification.new do |s|
   EOF
 
   s.files = FileList['lib/**/*.rb', '[A-Z]*'].to_a
-  s.required_ruby_version = '>= 2.5.9' # Not tested on earlier versions
+  s.required_ruby_version = '>= 3.0.0' # Not tested on earlier versions
 
   s.add_dependency 'drb',    '~> 2.2'
   s.add_dependency 'base64', '~> 0.2'
