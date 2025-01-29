@@ -80,18 +80,15 @@ class AccountController < ApplicationController
     # be recognised properly otherwise.
     #
     unless request.post?
-      cookies.delete( 'hubapp_shared_id'      )
-      cookies.delete( 'hub_session'           )
+      cookies.delete( 'hubapp_shared_id'    )
+      cookies.delete( 'hubapp_session'      )
 
-      cookies.delete( 'canvass_session'       )
-      cookies.delete( 'radiantapp_session'    )
-      cookies.delete( 'instikiapp_session'    )
-      cookies.delete( 'beastapp_session'      )
-
-      cookies.delete( 'typoapp_session_id'    )
-      cookies.delete( 'gulleryapp_session_id' )
-      cookies.delete( 'collaboaapp_session_id')
-      cookies.delete( 'rcvswebapp_session_id' )
+      cookies.delete( 'beastapp_session'    )
+      cookies.delete( 'canvassapp_session'  )
+      cookies.delete( 'collaboaapp_session' )
+      cookies.delete( 'instikiapp_session'  )
+      cookies.delete( 'radiantapp_session'  )
+      cookies.delete( 'typoapp_session'     )
 
       session[:return_to_url] = return_to_url
       return
