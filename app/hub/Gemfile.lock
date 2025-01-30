@@ -150,7 +150,6 @@ GEM
     net-protocol (0.2.2)
       timeout
     net-smtp (0.5.0)
-    newrelic_rpm (9.17.0)
     nio4r (2.7.4)
     nokogiri (1.18.2)
       mini_portile2 (~> 2.8.2)
@@ -228,6 +227,12 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
+    sentry-rails (5.22.3)
+      railties (>= 5.0)
+      sentry-ruby (~> 5.22.3)
+    sentry-ruby (5.22.3)
+      bigdecimal
+      concurrent-ruby (~> 1.0, >= 1.0.2)
     sinatra (3.2.0)
       mustermann (~> 3.0)
       rack (~> 2.2, >= 2.2.4)
@@ -235,6 +240,7 @@ GEM
       tilt (~> 2.0)
     sqlite3 (1.7.3)
       mini_portile2 (~> 2.8.0)
+    stackprof (0.2.27)
     stringio (3.1.2)
     thin (1.8.2)
       daemons (~> 1.0, >= 1.0.9)
@@ -279,13 +285,15 @@ DEPENDENCIES
   hubssolib (~> 3.0)
   invisible_captcha (~> 2.3)
   mailcatcher
-  newrelic_rpm
   pagy (~> 9.3)
   pg (~> 1.5)
   propshaft (~> 1.1)
   puma (~> 6.0)
   rails (~> 8.0)
   selenium-webdriver
+  sentry-rails
+  sentry-ruby
+  stackprof
   tzinfo-data
   web-console
   webdrivers

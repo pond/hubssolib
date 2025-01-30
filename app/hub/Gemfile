@@ -30,19 +30,15 @@ gem 'invisible_captcha', '~> 2.3'
 #
 gem 'hubssolib', '~> 3.0', require: 'hub_sso_lib'
 
-# Monitoring and alerting [http://rubygems.org/gems/newrelic_rpm]
+# Monitoring and alerting [http://sentry.io]
 #
-gem 'newrelic_rpm'
-
-# # Monitoring and alerting [http://sentry.io]
-# #
-# # * https://rubygems.org/gems/stackprof
-# # * https://rubygems.org/gems/sentry-ruby
-# # * https://rubygems.org/gems/sentry-rails
-# #
-# gem 'stackprof'
-# gem 'sentry-ruby'
-# gem 'sentry-rails'
+# * https://rubygems.org/gems/stackprof
+# * https://rubygems.org/gems/sentry-ruby
+# * https://rubygems.org/gems/sentry-rails
+#
+gem 'stackprof'
+gem 'sentry-ruby'
+gem 'sentry-rails'
 
 group :development, :test do
 
