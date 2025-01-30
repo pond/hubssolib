@@ -6,6 +6,10 @@ if ENV['SENTRY_DSN'].present?
     config.enabled_environments = [Rails.env]
     config.breadcrumbs_logger   = [:active_support_logger, :http_logger]
 
+    app_name       = Rails.application.class.module_parent_name
+    app_version    = `git rev-parse --short HEAD`.chom
+    config.release = "#{app_name} #{app_version} (#{Rails.env})"
+
     # Set traces_sample_rate to 1.0 to capture 100% of transactions for tracing.
     # Set profiles_sample_rate to profile 100% of sampled transactions.
     #
