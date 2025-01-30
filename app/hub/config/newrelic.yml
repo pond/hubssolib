@@ -20,6 +20,8 @@ common: &default_settings
 
   distributed_tracing:
     enabled: true
+  span_events:
+    enabled: true
 
   # To disable the agent regardless of other settings, uncomment the following:
 
@@ -34,7 +36,7 @@ common: &default_settings
     enabled: true
     forwarding:
       # If `true`, the agent captures log records emitted by this application.
-      enabled: true
+      enabled: false
       # Defines the maximum number of log records to buffer in memory at a time.
       max_samples_stored: 10000
     metrics:
