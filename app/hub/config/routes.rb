@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   resource :account, only: :create, controller: :account do
     get 'signup',               to: 'account#new' # (sic.)
     get '',                     to: 'account#new' # (invisible Captcha uses this)
+    get 'activate',             to: 'account#activate'
     get 'login_conditional',    to: 'account#login_conditional'
 
     # GET or POST routes to the same action (VERY old-fashioned Rails code).
