@@ -25,7 +25,13 @@ class AccountController < ApplicationController
   include HubSsoLib::Core
 
   before_action :hubssolib_ensure_https
-  invisible_captcha only: :create, honeypot: User::CAPTCHA_HONEYPOT, on_spam: :spam_bail
+
+  invisible_captcha(
+    honeypot: User::CAPTCHA_HONEYPOT,
+    only:     :create,
+    scope:    :user,
+    on_spam:  :spam_bail
+  )
 
   PROHIBITED_EMAIL_DOMAINS = %w{
     .cn
@@ -136,7 +142,6 @@ class AccountController < ApplicationController
   end
 
   def create
-    params[:user]&.delete(User::CAPTCHA_HONEYPOT)
     @user = User.new(allowed_user_params())
 
     if @user.email.present?
