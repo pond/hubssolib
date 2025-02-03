@@ -1,4 +1,8 @@
-## 3.0.0 (28-Jan-2022)
+## 3.0.1 (03-Feb-2025)
+
+Updated for Hub gem version 3.0.1, with `login_indication` brought back - but only intended to be used by no-JavaScript browsers as, hopefully, a unusual edge case that is infrequently needed.
+
+## 3.0.0 (28-Jan-2024)
 
 Updated for Hub gem version 3.0.0, with removal of `login_indication` endpoint and related resources.
 

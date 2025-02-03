@@ -48,7 +48,7 @@ Finally you can install the Hub application using whatever mechanism you prefer 
 
 Some configuration is needed using externally set environment variables. These are actually picked up by the Hub gem but you won't know what values to set until the application, DRb server and gem are all installed.
 
-*   `HUB_CONNECTION_URI` — as already discussed, this must hold a DRb URI giving the connection socket on which the server listens and to which clients connect.
+*   `HUB_CONNECTION_URI` — as already discussed, this holds a DRb URI giving the connection socket on which the server listens and to which clients connect; it defaults to `~/.hub_drb`.
 *   `HUB_PATH_PREFIX` — sometimes the Hub Gem redirects to various locations within the Hub application. If you have installed the application away from document root, specify the prefix to put onto redirection paths here (otherwise, provide an empty string). For example, when redirecting to the `account` controller's `login` method, the path used is `HUB_PATH_PREFIX + '/account/login'`.
 *   `HUB_BYPASS_SSL` - normally Hub sets cookies as secure-only in Production mode, requiring `https` fetches. This isn't enforced in e.g. development mode. If you want to allow insecure transport in Production, set `HUB_BYPASS_SSL` to `true`.
 
@@ -69,10 +69,21 @@ bundle exec rails s -b 127.0.0.1 --port 3000
 ...and then launch integrating applications with:
 
 ```
-HUB_PATH_PREFIX="http://127.0.0.1:3000" be rails s -b 127.0.0.1 --port <other-port>
+HUB_BYPASS_SSL="true" HUB_PATH_PREFIX="http://127.0.0.1:3000" be rails s -b 127.0.0.1 --port <other-port>
 ```
 
 ...and fetch `http://127.0.0.1:<other-port>` in your web browser.
+
+## Your application's session cookies
+
+It is often a good idea to clear application cookies when Hub users log in or out, so that there is no stale session data hanging around. **The Hub application auto-clears *all* cookies *ending with* the name `app_session`** for this purpose. Therefore, your application might include a `config/initializers/session_store.rb` file that says something like this:
+
+```ruby
+# Be sure to restart your server when you modify this file.
+Rails.application.config.session_store :cookie_store, key: 'yourappname_app_session'
+```
+
+This of course only applies if you're using cookies for your session data.
 
 ## Testing the installation
 

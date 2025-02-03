@@ -52,6 +52,9 @@ class AccountController < ApplicationController
     martinelena086
   }
 
+  LOGGED_IN_IMAGE  = File.read("#{Rails.root}/app/assets/images/account/logged_in.png")
+  LOGGED_OUT_IMAGE = File.read("#{Rails.root}/app/assets/images/account/logged_out.png")
+
   # Action permissions for this class as a class variable, exposed
   # to the public through a class method.
   #
@@ -86,16 +89,7 @@ class AccountController < ApplicationController
     # be recognised properly otherwise.
     #
     unless request.post?
-      cookies.delete( 'hubapp_shared_id'    )
-      cookies.delete( 'hubapp_session'      )
-
-      cookies.delete( 'beastapp_session'    )
-      cookies.delete( 'canvassapp_session'  )
-      cookies.delete( 'collaboaapp_session' )
-      cookies.delete( 'instikiapp_session'  )
-      cookies.delete( 'radiantapp_session'  )
-      cookies.delete( 'typoapp_session'     )
-
+      self.clear_all_known_session_related_cookies()
       session[:return_to_url] = return_to_url
       return
     end
@@ -107,6 +101,7 @@ class AccountController < ApplicationController
       hubssolib_set_last_used(Time.now.utc)
 
       privileges = hubssolib_get_user_roles.to_human_s.downcase
+
       hubssolib_set_flash(
         :notice,
         "Logged in successfully. Welcome, #{hubssolib_get_user_name}. " <<
@@ -130,6 +125,8 @@ class AccountController < ApplicationController
   def logout
     @title = 'Log out'
     hubssolib_log_out()
+    self.clear_all_known_session_related_cookies()
+
     hubssolib_set_flash(:attention, 'You are now logged out.')
     redirect_to root_path()
   end
@@ -527,127 +524,172 @@ class AccountController < ApplicationController
     end
   end
 
-private
-
-  # Pass a HubSsoLib::User object. Returns an equivalent User Model object.
-  # If the optional second parameter is 'true' (default 'false'), a failure
-  # to find a user in the local database results in 'nil' being returned;
-  # otherwise an exception is thrown.
+  # Typically only used via the HubSsoLib::Core#hubssolib_account_link helper,
+  # and intended to be rendered only by NOSCRIPT browsers usually.
   #
-  def to_real_user(user, allow_nil = false)
-    return nil if user.nil?
-    raise 'Incorrect argument class' unless (user.class == HubSsoLib::User or user.class == DRbObject)
-
-    # Unpleasant "user_" prefix in HubSsoLib::User field names is to avoid
-    # collisions (e.g. of "id") with DRbObject.
-
-    real_user = User.find_by_id(user.user_id)
-
-    unless real_user
-      raise 'No equivalent real user' if allow_nil == false
-      return nil
-    end
-
-    real_user.activated_at                   = Time.zone.parse(user.user_activated_at)
-    real_user.activation_code                =                 user.user_activation_code
-    real_user.created_at                     = Time.zone.parse(user.user_created_at)
-    real_user.crypted_password               =                 user.user_crypted_password
-    real_user.email                          =                 user.user_email
-    real_user.member_id                      =                 user.user_member_id
-    real_user.password_reset_code            =                 user.user_password_reset_code
-    real_user.password_reset_code_expires_at = Time.zone.parse(user.user_password_reset_code_expires_at)
-    real_user.real_name                      =                 user.user_real_name
-    real_user.remember_token                 =                 user.user_remember_token
-    real_user.remember_token_expires_at      = Time.zone.parse(user.user_remember_token_expires_at)
-    real_user.roles                          =                 user.user_roles
-    real_user.salt                           =                 user.user_salt
-    real_user.updated_at                     = Time.zone.parse(user.user_updated_at)
-
-    return real_user
-  end
-
-  # Pass a User Model object. Returns an equivalent HubSsoLib::User object.
+  # Returns a 2x density ("high DPI") PNG of size 180x44 physical pixels for
+  # intended rendering at half that, i.e. 90x22 "web pixels", which indicates
+  # a logged in or logged out state.
   #
-  def from_real_user(real_user)
-    return nil if real_user.nil?
-    raise 'Incorrect argument class' unless real_user.class == User
+  # This image has a no-cache header, so inclusion in a wider cached page will
+  # not result in a stale login indication, as might otherwise be the case.
+  #
+  # JavaScript-enabled clients ought to work entirely locally, using cookies to
+  # determine login state at runtime and adjusting the page markup accordingly.
+  # This removes the need for an image fetch to this endpoint on every page.
+  #
+  # This endpoint only exists because the RISC OS Open web site is known to be
+  # visited by browsers without JavaScript support.
+  #
+  def login_indication
+    headers['Pragma']        = 'no-cache'
+    headers['Cache-Control'] = 'no-cache, must-revalidate'
 
-    user = HubSsoLib::User.new
-
-    user.user_activated_at                   = real_user.activated_at.to_s
-    user.user_activation_code                = real_user.activation_code
-    user.user_created_at                     = real_user.created_at.to_s
-    user.user_crypted_password               = real_user.crypted_password
-    user.user_email                          = real_user.email
-    user.user_id                             = real_user.id
-    user.user_member_id                      = real_user.member_id
-    user.user_password_reset_code            = real_user.password_reset_code
-    user.user_password_reset_code_expires_at = real_user.password_reset_code_expires_at.to_s
-    user.user_real_name                      = real_user.real_name
-    user.user_remember_token                 = real_user.remember_token
-    user.user_remember_token_expires_at      = real_user.remember_token_expires_at.to_s
-    user.user_roles                          = real_user.roles
-    user.user_salt                           = real_user.salt
-    user.user_updated_at                     = real_user.updated_at.to_s
-
-    return user
+    send_data(
+      hubssolib_logged_in? ? LOGGED_IN_IMAGE : LOGGED_OUT_IMAGE,
+      type:        'image/png',
+      disposition: 'inline'
+    )
   end
 
-  def save_password_and_set_flash(user)
-    success = user.save()
+  # ============================================================================
+  # PRIVATE INSTANCE METHODS
+  # ============================================================================
+  #
+  private
 
-    if success
-      hubssolib_set_flash(:notice, 'Your password has been changed.')
-    else
-      self.set_password_bad_flash()
+    # Dump all known application cookies; they can be stale and logins might
+    # not be recognised properly otherwise, or the user might've just logged
+    # out.
+    #
+    def clear_all_known_session_related_cookies
+      cookies.delete('hubapp_shared_id') # HubSsoLib::Core#hubssolib_account_link depends upon this
+
+      cookies.to_h.keys.each do | key |
+        cookies.delete(key) if key.end_with?('app_session') # E.g. 'hubapp_session', 'beastapp_session'
+      end
     end
 
-    return success
-  end
+    # Pass a HubSsoLib::User object. Returns an equivalent User Model object.
+    # If the optional second parameter is 'true' (default 'false'), a failure
+    # to find a user in the local database results in 'nil' being returned;
+    # otherwise an exception is thrown.
+    #
+    def to_real_user(user, allow_nil = false)
+      return nil if user.nil?
+      raise 'Incorrect argument class' unless (user.class == HubSsoLib::User or user.class == DRbObject)
 
-  def set_password_bad_flash
-    hubssolib_set_flash(
-      :alert,
-      "The password differed from the password confirmation, or was too short. Passwords must be at least #{User::MIN_PW_LENGTH} letters long."
-    )
-  end
+      # Unpleasant "user_" prefix in HubSsoLib::User field names is to avoid
+      # collisions (e.g. of "id") with DRbObject.
 
-  def allowed_user_params
-    params.require(:user).permit(
-      :email,
-      :real_name,
-      :password,
-      :password_confirmation
-    )
-  end
+      real_user = User.find_by_id(user.user_id)
 
-  def set_maths_question
-    session[:num1] = (2..9).to_a.sample
-    session[:num2] = (2..9).to_a.sample
-    session[:op  ] = %w{+ - *}.sample
-  end
+      unless real_user
+        raise 'No equivalent real user' if allow_nil == false
+        return nil
+      end
 
-  def get_maths_answer
-    num1   = session[:num1].to_i
-    num2   = session[:num2].to_i
-    answer = case session[:op]
-      when '+'
-        num1 + num2
-      when '-'
-        num1 - num2
-      when '*'
-        num1 * num2
+      real_user.activated_at                   = Time.zone.parse(user.user_activated_at)
+      real_user.activation_code                =                 user.user_activation_code
+      real_user.created_at                     = Time.zone.parse(user.user_created_at)
+      real_user.crypted_password               =                 user.user_crypted_password
+      real_user.email                          =                 user.user_email
+      real_user.member_id                      =                 user.user_member_id
+      real_user.password_reset_code            =                 user.user_password_reset_code
+      real_user.password_reset_code_expires_at = Time.zone.parse(user.user_password_reset_code_expires_at)
+      real_user.real_name                      =                 user.user_real_name
+      real_user.remember_token                 =                 user.user_remember_token
+      real_user.remember_token_expires_at      = Time.zone.parse(user.user_remember_token_expires_at)
+      real_user.roles                          =                 user.user_roles
+      real_user.salt                           =                 user.user_salt
+      real_user.updated_at                     = Time.zone.parse(user.user_updated_at)
+
+      return real_user
     end
 
-    return answer
-  end
+    # Pass a User Model object. Returns an equivalent HubSsoLib::User object.
+    #
+    def from_real_user(real_user)
+      return nil if real_user.nil?
+      raise 'Incorrect argument class' unless real_user.class == User
 
-  def spam_bail
-    hubssolib_set_flash(
-      :alert,
-      "Sorry, we didn't understand that sign-up attempt. Please try again."
-    )
+      user = HubSsoLib::User.new
 
-    redirect_to signup_account_path()
-  end
+      user.user_activated_at                   = real_user.activated_at.to_s
+      user.user_activation_code                = real_user.activation_code
+      user.user_created_at                     = real_user.created_at.to_s
+      user.user_crypted_password               = real_user.crypted_password
+      user.user_email                          = real_user.email
+      user.user_id                             = real_user.id
+      user.user_member_id                      = real_user.member_id
+      user.user_password_reset_code            = real_user.password_reset_code
+      user.user_password_reset_code_expires_at = real_user.password_reset_code_expires_at.to_s
+      user.user_real_name                      = real_user.real_name
+      user.user_remember_token                 = real_user.remember_token
+      user.user_remember_token_expires_at      = real_user.remember_token_expires_at.to_s
+      user.user_roles                          = real_user.roles
+      user.user_salt                           = real_user.salt
+      user.user_updated_at                     = real_user.updated_at.to_s
+
+      return user
+    end
+
+    def save_password_and_set_flash(user)
+      success = user.save()
+
+      if success
+        hubssolib_set_flash(:notice, 'Your password has been changed.')
+      else
+        self.set_password_bad_flash()
+      end
+
+      return success
+    end
+
+    def set_password_bad_flash
+      hubssolib_set_flash(
+        :alert,
+        "The password differed from the password confirmation, or was too short. Passwords must be at least #{User::MIN_PW_LENGTH} letters long."
+      )
+    end
+
+    def allowed_user_params
+      params.require(:user).permit(
+        :email,
+        :real_name,
+        :password,
+        :password_confirmation
+      )
+    end
+
+    def set_maths_question
+      session[:num1] = (2..9).to_a.sample
+      session[:num2] = (2..9).to_a.sample
+      session[:op  ] = %w{+ - *}.sample
+    end
+
+    def get_maths_answer
+      num1   = session[:num1].to_i
+      num2   = session[:num2].to_i
+      answer = case session[:op]
+        when '+'
+          num1 + num2
+        when '-'
+          num1 - num2
+        when '*'
+          num1 * num2
+      end
+
+      return answer
+    end
+
+    def spam_bail
+      hubssolib_set_flash(
+        :alert,
+        "Sorry, we didn't understand that sign-up attempt. Please try again."
+      )
+
+      redirect_to signup_account_path()
+    end
+
 end

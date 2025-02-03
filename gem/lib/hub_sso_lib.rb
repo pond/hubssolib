@@ -44,6 +44,10 @@ module HubSsoLib
   # Shared cookie name.
   HUB_COOKIE_NAME = 'hubapp_shared_id'
 
+  # Principally for #hubssolib_account_link.
+  HUB_LOGIN_INDICATOR_COOKIE       = 'hubapp_shared_id_alive'
+  HUB_LOGIN_INDICATOR_COOKIE_VALUE = 'Y'
+
   # Bypass SSL, for testing purposes? Rails 'production' mode will
   # insist on SSL otherwise. Development & test environments do not,
   # so do not need this variable setting.
@@ -523,20 +527,60 @@ module HubSsoLib
     # used in page templates to avoid needing any additional images or other
     # such resources and using pure HTML + CSS for the login indication.
     #
+    # JavaScript is used so that e.g. "back" button fully-cached displays by a
+    # browser will get updated with the correct login state, where needed (so
+    # long as the 'pageshow' event is supported). NOSCRIPT browsers use the old
+    # no-cache image fallback, which is much less efficient, but works.
+    #
     def hubssolib_account_link
-      logged_in = self.hubssolib_logged_in?()
+      logged_in        = self.hubssolib_logged_in?()
 
-      text, klass, style = if logged_in
-        ['Account', 'hubssolib_logged_in',  'border: 1px solid #050; color: #050; background: #efe;']
-      else
-        ['Log in',  'hubssolib_logged_out', 'border: 1px solid #500; color: #500; background: #fee;']
-      end
+      ui_href          = "#{HUB_PATH_PREFIX}/account/login_conditional"
+      noscript_img_src = "#{HUB_PATH_PREFIX}/account/login_indication.png"
+      noscript_img_tag = helpers.image_tag(noscript_img_src, size: '90x22', border: '0', alt: 'Log in or out')
 
-      style << ' display: block; width: 88px; height; 20px;'
-      style << ' text-align: center; line-height: 20px;'
-      style << ' font: sans-serif; font-size: 10pt'
+      logged_in_link   = helpers.link_to('Account',        ui_href, id: 'hubssolib_logged_in_link')
+      logged_out_link  = helpers.link_to('Log in',         ui_href, id: 'hubssolib_logged_out_link')
+      noscript_link    = helpers.link_to(noscript_img_tag, ui_href, id: 'hubssolib_login_noscript')
 
-      "<a href=\"#{HUB_PATH_PREFIX}/account/login_conditional\" class=\"#{klass}\" style=\"#{style}\">#{text}</a>".html_safe()
+      # Yes, it's ugly, but yes, it works and it's a lot better for the server
+      # to avoid the repeated image fetches. It probably works out as overall
+      # more efficient for clients too - despite all the JS etc. work, there's
+      # no network fetch overhead or image rendering. On mobile in particular,
+      # the JS solution is likely to use less battery power.
+      #
+      safe_markup = <<~HTML
+        <div id="hubssolib_login_indication">
+          <noscript>
+            #{noscript_link}
+          </noscript>
+        </div>
+        <script type="text/javascript">
+          const logged_in_html  = "#{helpers.j(logged_in_link)}";
+          const logged_out_html = "#{helpers.j(logged_out_link)}";
+          const container       = document.getElementById('hubssolib_login_indication')
+
+          function hubSsoLibLoginStateWriteLink() {
+            const regexp = '#{helpers.j(HUB_LOGIN_INDICATOR_COOKIE)}\\s*=\\s*([^;]+)';
+            const flag   = document.cookie.match(regexp)?.pop() || '';
+
+            if (flag === '#{HUB_LOGIN_INDICATOR_COOKIE_VALUE}') {
+              container.innerHTML = logged_in_html;
+            } else {
+              container.innerHTML = logged_out_html;
+            }
+          }
+          #{
+            # Immediate update, plus on-load update - including fully cached
+            # loads in the browser when the "Back" button is used. No stale
+            # login indications should thus arise from cached data.
+          }
+          hubSsoLibLoginStateWriteLink();
+          window.addEventListener('pageshow', hubSsoLibLoginStateWriteLink);
+        </script>
+      HTML
+
+      return safe_markup.html_safe()
     end
 
     # Check if the user is authorized to perform the current action. If calling
@@ -665,7 +709,7 @@ module HubSsoLib
     def hubssolib_beforehand
 
       # Does this action require a logged in user?
-
+      #
       if (self.class.respond_to? :hubssolib_permissions)
         login_is_required = !self.class.hubssolib_permissions.permitted?('', action_name)
       else
@@ -673,19 +717,30 @@ module HubSsoLib
       end
 
       # If we require login but we're logged out, redirect to Hub login.
-
+      # NOTE EARLY EXIT
+      #
       logged_in = hubssolib_logged_in?
 
-      if (login_is_required and logged_in == false)
-        hubssolib_store_location
-        return hubssolib_must_login
+      if logged_in == false
+        cookies.delete(HUB_LOGIN_INDICATOR_COOKIE)
+
+        if login_is_required
+          hubssolib_store_location
+          return hubssolib_must_login
+        else
+          return true
+        end
       end
 
-      # If we reach here the user is either logged, or the method does
-      # not require them to be. In the latter case, if we're not logged
-      # in there is no more work to do - exit early.
-
-      return true unless logged_in # true -> let action processing continue
+      # Definitely logged in.
+      #
+      cookies[HUB_LOGIN_INDICATOR_COOKIE] = {
+        value:    HUB_LOGIN_INDICATOR_COOKIE_VALUE,
+        domain:   :all,
+        path:     '/',
+        secure:   ! hub_bypass_ssl?,
+        httponly: false
+      }
 
       # So we reach here knowing we're logged in, but the action may or
       # may not require authorisation.
@@ -983,11 +1038,11 @@ module HubSsoLib
       key         = hub_session.session_key_rotation unless hub_session.nil?
 
       cookies[HUB_COOKIE_NAME] = {
-        :value    => key,
-        :domain   => :all,
-        :path     => '/',
-        :secure   => ! hub_bypass_ssl?,
-        :httponly => true
+        value:    key,
+        domain:   :all,
+        path:     '/',
+        secure:   ! hub_bypass_ssl?,
+        httponly: true
       }
 
       return hub_session

@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     get '',                     to: 'account#new' # (invisible Captcha uses this)
     get 'activate',             to: 'account#activate'
     get 'login_conditional',    to: 'account#login_conditional'
+    get 'login_indication',     to: 'account#login_indication'
 
     # GET or POST routes to the same action (VERY old-fashioned Rails code).
     #

@@ -1,6 +1,6 @@
-## 3.0.0, 28-Jan-2025
+## 3.0.0, 28-Jan-2025 and 3.0.1, 03-Feb-2025
 
-* The Hub "login indication" URL approach is now dropped, so layout templates **must be updated.**
+* The Hub "login indication" URL approach is now dropped, so layout templates **should be updated.**
 
 In Hub v1 and v2, login indication was done via an image that was served by the Hub application itself, wrapped in a link that visited a "conditional login" endpoint which stored the return-to URL, ensured HTTPS was in use and visited either the log in, or log out page as required. In client applications it looked a bit like this:
 
@@ -16,7 +16,40 @@ This dates back to a time when CSS support was not that widespread and RISC OS O
 <%= hubssolib_account_link() %>
 ```
 
-...in place of the markup above.
+...in place of the markup above. You probably want to add some supporting CSS too; for example:
+
+```css
+#hubssolib_login_indication a#hubssolib_logged_in_link,
+#hubssolib_login_indication a#hubssolib_logged_out_link {
+  display:         block;
+  text-align:      center;
+  text-decoration: none;
+  font:            sans-serif;
+  font-size:       10pt;
+  line-height:     20px;
+  height:          20px;
+  width:           88px;
+  border:          1px solid #ccc;
+}
+
+#hubssolib_login_indication a#hubssolib_logged_in_link {
+  color:        #050;
+  border-color: #050;
+  background:   #efe;
+}
+
+#hubssolib_login_indication a#hubssolib_logged_out_link {
+  color:        #500;
+  border-color: #500;
+  background:   #fee;
+}
+
+#hubssolib_login_indication a#hubssolib_login_noscript {
+  text-decoration: none;
+}
+```
+
+Version 3.0.1 patches the system to make sure that the correct current login state is shown even if a browser has a page cached. To achieve this, JavaScript is used to check cookie state and update the indication on-the-fly. There is a `noscript` fallback that uses the old, inefficient `login_indication` image mechanism - just in case. The CSS styles above are designed to match those images, though of course, they certainly don't have to!
 
 
 

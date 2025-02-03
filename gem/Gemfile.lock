@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hubssolib (3.0.0)
+    hubssolib (3.0.1)
       base64 (~> 0.2)
       drb (~> 2.2)
 
