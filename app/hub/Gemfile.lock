@@ -105,7 +105,7 @@ GEM
     foreman (0.88.1)
     globalid (1.2.1)
       activesupport (>= 6.1)
-    hubssolib (3.0.1)
+    hubssolib (3.0.2)
       base64 (~> 0.2)
       drb (~> 2.2)
     i18n (1.14.7)

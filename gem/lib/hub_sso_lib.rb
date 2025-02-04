@@ -42,10 +42,10 @@ module HubSsoLib
   HUB_IDLE_TIME_LIMIT = 4 * 60 * 60
 
   # Shared cookie name.
-  HUB_COOKIE_NAME = 'hubapp_shared_id'
+  HUB_COOKIE_NAME = :hubapp_shared_id
 
   # Principally for #hubssolib_account_link.
-  HUB_LOGIN_INDICATOR_COOKIE       = 'hubapp_shared_id_alive'
+  HUB_LOGIN_INDICATOR_COOKIE       = :hubapp_shared_id_alive
   HUB_LOGIN_INDICATOR_COOKIE_VALUE = 'Y'
 
   # Bypass SSL, for testing purposes? Rails 'production' mode will
@@ -722,7 +722,7 @@ module HubSsoLib
       logged_in = hubssolib_logged_in?
 
       if logged_in == false
-        cookies.delete(HUB_LOGIN_INDICATOR_COOKIE)
+        cookies.delete(HUB_LOGIN_INDICATOR_COOKIE, domain: :all, path: '/')
 
         if login_is_required
           hubssolib_store_location
@@ -736,8 +736,9 @@ module HubSsoLib
       #
       cookies[HUB_LOGIN_INDICATOR_COOKIE] = {
         value:    HUB_LOGIN_INDICATOR_COOKIE_VALUE,
-        domain:   :all,
         path:     '/',
+        domain:   :all,
+        expires:  1.year, # I.e. *not* session-scope
         secure:   ! hub_bypass_ssl?,
         httponly: false
       }
@@ -1039,8 +1040,8 @@ module HubSsoLib
 
       cookies[HUB_COOKIE_NAME] = {
         value:    key,
-        domain:   :all,
         path:     '/',
+        domain:   :all,
         secure:   ! hub_bypass_ssl?,
         httponly: true
       }

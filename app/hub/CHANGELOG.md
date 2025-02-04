@@ -1,3 +1,7 @@
+## 3.0.2 (04-Feb-2025)
+
+Updated for Hub gem version 3.0.2, which fixed a bug that could cause cookie deletions for login state indication to sometimes fail to work as expected.
+
 ## 3.0.1 (03-Feb-2025)
 
 Updated for Hub gem version 3.0.1, with `login_indication` brought back - but only intended to be used by no-JavaScript browsers as, hopefully, a unusual edge case that is infrequently needed.

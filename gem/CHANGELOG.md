@@ -1,3 +1,7 @@
+## 3.0.2, 04-Feb 2025
+
+Fixes a bug that could cause cookie deletions for login state indication to sometimes fail to work as expected.
+
 ## 3.0.0, 28-Jan-2025 and 3.0.1, 03-Feb-2025
 
 * The Hub "login indication" URL approach is now dropped, so layout templates **should be updated.**
