@@ -52,6 +52,18 @@ module Hub
     config.time_zone = 'UTC'
     config.active_record.default_timezone = :utc
 
+    # Custom format and rotation for logs.
+    #
+    class CustomLoggerFormatter < Logger::Formatter
+      def call(severity, time, progname, msg)
+        # https://github.com/ruby/logger/blob/master/lib/logger/formatter.rb#L16
+        "#{severity[0]} #{time.iso8601(2)}: #{msg2str(msg)}\n"
+      end
+    end
+
+    config.logger           = Logger.new(Rails.root.join('log', "#{Rails.env}.log"), 'daily')
+    config.logger.formatter = CustomLoggerFormatter.new
+
     # Add the shared ROOL view components.
     #
     shared_views_path = if ENV['SHARED_FILES_PATH'].blank?
