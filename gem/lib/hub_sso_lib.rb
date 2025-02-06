@@ -292,12 +292,15 @@ module HubSsoLib
     # include at least one role (which it obviously doesn't).
     #
     def permitted?(roles, action)
-      action = action.to_s.intern
-      roles  = roles.to_authenticated_roles
+      action = action.to_s.to_sym unless action.is_a?(Symbol)
 
-      return true unless @permissions.include?(action)
-      return true if @permissions[action].nil?
-      return roles.include?(@permissions[action])
+      # Fail-enabled, undeclared actions are public.
+      #
+      return true unless @permissions.key?(action)
+      return true if @permissions[action].nil? # Explicit, unusual "action: nil" delaration
+
+      return false if roles.nil?
+      return roles.to_authenticated_roles.include?(@permissions[action])
     end
   end # Permissions class
 
