@@ -3,7 +3,9 @@ GEM
   specs:
     base64 (0.2.0)
     drb (2.2.1)
-    hubssolib (2.1.0)
+    hubssolib (3.0.2)
+      base64 (~> 0.2)
+      drb (~> 2.2)
 
 PLATFORMS
   arm64-darwin-24
@@ -12,7 +14,7 @@ PLATFORMS
 DEPENDENCIES
   base64
   drb
-  hubssolib (~> 2.1)
+  hubssolib (~> 3.0)
 
 BUNDLED WITH
    2.6.2

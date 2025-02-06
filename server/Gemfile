@@ -3,4 +3,4 @@ source 'https://rubygems.org'
 gem 'drb'
 gem 'base64'
 
-gem 'hubssolib', '~> 2.1', :require => 'hub_sso_lib'
+gem 'hubssolib', '~> 3.0', :require => 'hub_sso_lib'
