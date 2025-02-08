@@ -20,6 +20,7 @@
 
       <div id="template_body">
         <div id="template_body_content">
+          <%= content_for :above_flash %>
           <%= apphelp_flash() unless @service_fault %>
 
           <div class="content">

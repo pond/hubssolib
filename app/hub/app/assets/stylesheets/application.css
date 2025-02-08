@@ -30,10 +30,10 @@ div.content a.image:hover
   border: none;
 }
 
-/* Centralised Pagy navigation */
+/* Contains Pagy navigation */
 
 div.pagination {
-  text-align: center;
+  text-align: left;
 }
 
 /* Special Hub cases for listing tables */

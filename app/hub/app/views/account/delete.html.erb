@@ -1,13 +1,20 @@
-            <%= image_tag image_path('account/delete_confirm.png'), :size => '80x80', :alt => 'Delete confirmation', :align => 'left' %>
+<% content_for :above_flash do %>
+  <h1>Delete account</h1>
+  <br />
+  <br />
+<% end %>
 
-            If you are sure you want to delete your account, please use the
-            button below to confirm the action. Once deleted your account
-            cannot be recovered, except by creating a new account from scratch.
+<%= image_tag image_path('account/delete_confirm.png'), :size => '80x80', :alt => 'Delete confirmation', :align => 'left' %>
 
-            <p />
-            <%= button_to 'Yes, really delete my account!', :controller => 'account', :action => 'delete_confirm' %>
+<p>
+  If you are sure you want to delete your account, please use the button below
+  to confirm the action. Once deleted <b>your account cannot be recovered</b>,
+  except by creating a new one from scratch.
+</p>
 
-            <p />
-            If you don't want to do this, you can
-            <%= link_to 'go back to the control panel', :controller => 'tasks', :action => 'index' %>
-            instead.
+<p>
+  <%= button_to 'Yes, really delete my account!', :controller => 'account', :action => 'delete_confirm' %>
+</p>
+
+<br />
+<%= render partial: 'shared/to_control_panel' %>

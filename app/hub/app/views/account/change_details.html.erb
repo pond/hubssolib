@@ -1,32 +1,33 @@
-        A <%= INSTITUTION_NAME_LONG %> web site account doesn't contain much information. It's really
-        just a way to make sure that things contributed to the site come from
-        real people, rather than advertisers.
+<h1>Change details</h1>
 
-        <p />
-        All personal details stored in your account can be edited below, except for
-        your e-mail address. To change address, either <strong>contact
-        <%= INSTITUTION_NAME_LONG %> at <%= mail_to(INSTITUTION_NAME_EMAIL) %></strong>
-        or, if you want to handle things yourself, delete your old account and create
-        a new one. This is required so that the proper account activation process
-        is followed for any new e-mail address.
+<p>
+  A <%= INSTITUTION_NAME_LONG %> web site account doesn't contain much information. It's really
+  just a way to make sure that things contributed to the site come from
+  real people, rather than advertisers.
+</p>
 
-        <p />
-        <%= render "shared/error_messages", target: @user %>
+<p>
+  All personal details stored in your account can be edited below, except for
+  your e-mail address. To change address, either <b>contact
+  <%= INSTITUTION_NAME_LONG %> at <%= mail_to(INSTITUTION_NAME_EMAIL) %></b>
+  or, if you want to handle things yourself, delete your old account and create
+  a new one. This is required so that the proper account activation process
+  is followed for any new e-mail address.
+</p>
 
-        <%= form_tag do %>
-          <p />
-          <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
-            <tr>
-              <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
-              <td><%= text_field_tag 'real_name', @real_name, size: 40, maxlength: User::MAX_NAME_LENGTH %></td>
-            </tr>
-          </table>
+<%= render "shared/error_messages", target: @user %>
 
-          <p align="center" />
-          <%= submit_tag('Update') %>
-        <% end %>
+<%= form_tag do %>
+  <table class="horizontal bordered" cellspacing="1" cellpadding="4" border="1" align="center" bgcolor="#ffffff">
+    <tr>
+      <th bgcolor="#eeeeee" align="left"><label for="real_name">Real name</label></th>
+      <td><%= text_field_tag 'real_name', @real_name, size: 40, maxlength: User::MAX_NAME_LENGTH %></td>
+    </tr>
+  </table>
 
-        <p />
-        If you don't want to do this, you can
-        <%= link_to 'go back to the control panel', controller: 'tasks', action: 'index' %>
-        instead.
+  <p align="center">
+    <%= submit_tag('Update') %>
+  </p>
+<% end %>
+
+<%= render partial: 'shared/to_control_panel' %>
