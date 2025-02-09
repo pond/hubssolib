@@ -13,3 +13,8 @@ en:
     choice: "or %{all_link}"
     all: "list all"
     paginated: "show pages"
+
+  search:
+    site: "Search site"
+    users: "Search users"
+    button: "Go"

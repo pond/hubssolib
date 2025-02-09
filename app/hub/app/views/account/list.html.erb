@@ -38,15 +38,16 @@
   </tbody>
 </table>
 
-<div class="pagination">
-  <%= custom_pagy_nav(@user_pages).html_safe() %>
-</div>
+<div class="pagination simple_flex_row">
+  <div>
+    <%= custom_pagy_nav(@user_pages).html_safe() %>
+  </div>
 
-<p align="center">
-  <%= form_tag 'list', :method => 'get' do %>
-    Search users: <%=   text_field_tag(:q, params[:q]) %>
+  <%= form_with url: list_account_path(), method: 'get', class: 'search_form horizontal' do |f| %>
+    <%= f.search_field(:q, size: 14, value: params[:q], placeholder: t('search.users')) %>
+    <%= f.button(t('search.button'), type: 'submit') %>
   <% end %>
-</p>
+</div>
 
 <p>
   When you've finished managing accounts, you can
