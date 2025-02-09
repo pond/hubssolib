@@ -13,8 +13,8 @@ class TasksController < ApplicationController
   helper :Tasks
   layout 'application'
 
-  skip_before_action :hubssolib_beforehand, :only => :service
-  skip_after_action  :hubssolib_afterwards, :only => :service
+  skip_before_action :hubssolib_beforehand, only: :service
+  skip_after_action  :hubssolib_afterwards, only: :service
 
   def index
     # Generate a list of available tasks.
@@ -25,8 +25,8 @@ class TasksController < ApplicationController
   def service
     # Warn that there is a service problem.
 
-    @title = 'Service failure'
+    @title          = 'Service failure'
     @exception_data = hubssolib_get_exception_message(params[:id])
-    @service_fault = true # To tell the template not to talk to Hub
+    @service_fault  = true # To tell the template not to talk to Hub
   end
 end
