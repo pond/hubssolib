@@ -43,7 +43,7 @@
     <%= custom_pagy_nav(@user_pages).html_safe() %>
   </div>
 
-  <%= form_with url: list_account_path(), method: 'get', class: 'search_form horizontal' do |f| %>
+  <%= form_with url: list_account_path(), method: 'get', class: 'search_form' do |f| %>
     <%= f.search_field(:q, size: 14, value: params[:q], placeholder: t('search.users')) %>
     <%= f.button(t('search.button'), type: 'submit') %>
   <% end %>
