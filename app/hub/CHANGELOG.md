@@ -1,3 +1,7 @@
+## 3.0.3 (10-Feb-2025)
+
+Updated for Hub gem version 3.0.3, which has better compatibility with older or more lightweight browsers than the usual mainstream set.
+
 ## 3.0.2 (04-Feb-2025)
 
 Updated for Hub gem version 3.0.2, which fixed a bug that could cause cookie deletions for login state indication to sometimes fail to work as expected.

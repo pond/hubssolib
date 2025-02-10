@@ -1,4 +1,8 @@
-## 3.0.2, 04-Feb 2025
+## 3.0.3, 10-Feb-2025
+
+Change JavaScript code used for the login indicator so that simpler engines such as [Duktape](https://duktape.org) can run it. Operates correctly in script-enabled [NetSurf](https://www.netsurf-browser.org) now.
+
+## 3.0.2, 04-Feb-2025
 
 Fixes a bug that could cause cookie deletions for login state indication to sometimes fail to work as expected.
 

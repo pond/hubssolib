@@ -55,13 +55,15 @@ module Hub
     # Custom format and rotation for logs.
     #
     class CustomLoggerFormatter < Logger::Formatter
+      include ActiveSupport::TaggedLogging::Formatter
+
       def call(severity, time, progname, msg)
-        # https://github.com/ruby/logger/blob/master/lib/logger/formatter.rb#L16
-        "#{severity[0]} #{time.iso8601(2)}: #{msg2str(msg)}\n"
+        "#{severity[0]} #{time.iso8601(2)} #{tag_stack.format_message(msg)}\n"
       end
     end
 
-    config.logger           = Logger.new(Rails.root.join('log', "#{Rails.env}.log"), 'daily')
+    config.log_tags         = [ :request_id ] # To match against reports in Sentry, should need arise
+    config.logger           = ActiveSupport::TaggedLogging.logger(Rails.root.join('log', "#{Rails.env}.log"), 'daily')
     config.logger.formatter = CustomLoggerFormatter.new
 
     # Add the shared ROOL view components.

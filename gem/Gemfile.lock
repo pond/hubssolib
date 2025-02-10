@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hubssolib (3.0.2)
+    hubssolib (3.0.3)
       base64 (~> 0.2)
       drb (~> 2.2)
 
@@ -29,7 +29,7 @@ GEM
     psych (5.2.3)
       date
       stringio
-    rdoc (6.11.0)
+    rdoc (6.12.0)
       psych (>= 4.0.0)
     reline (0.6.0)
       io-console (~> 0.5)
@@ -37,7 +37,7 @@ GEM
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
-    rspec-core (3.13.2)
+    rspec-core (3.13.3)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.3)
       diff-lcs (>= 1.2.0, < 2.0)

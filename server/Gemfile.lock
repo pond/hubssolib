@@ -3,7 +3,7 @@ GEM
   specs:
     base64 (0.2.0)
     drb (2.2.1)
-    hubssolib (3.0.2)
+    hubssolib (3.0.3)
       base64 (~> 0.2)
       drb (~> 2.2)
 

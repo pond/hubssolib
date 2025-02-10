@@ -292,15 +292,12 @@ module HubSsoLib
     # include at least one role (which it obviously doesn't).
     #
     def permitted?(roles, action)
-      action = action.to_s.to_sym unless action.is_a?(Symbol)
+      action = action.to_s.intern
+      roles  = roles.to_authenticated_roles
 
-      # Fail-enabled, undeclared actions are public.
-      #
-      return true unless @permissions.key?(action)
-      return true if @permissions[action].nil? # Explicit, unusual "action: nil" delaration
-
-      return false if roles.nil?
-      return roles.to_authenticated_roles.include?(@permissions[action])
+      return true unless @permissions.include?(action)
+      return true if @permissions[action].nil?
+      return roles.include?(@permissions[action])
     end
   end # Permissions class
 
@@ -563,9 +560,14 @@ module HubSsoLib
           const logged_out_html = "#{helpers.j(logged_out_link)}";
           const container       = document.getElementById('hubssolib_login_indication')
 
+          #{
+            # No '?.' support in NetSurf's JS engine, so can't do the match
+            # and pop in a single line via "?.pop() || ''".
+          }
           function hubSsoLibLoginStateWriteLink() {
             const regexp = '#{helpers.j(HUB_LOGIN_INDICATOR_COOKIE)}\\s*=\\s*([^;]+)';
-            const flag   = document.cookie.match(regexp)?.pop() || '';
+            const match  = document.cookie.match(regexp);
+            const flag   = (match ? match.pop() : null) || '';
 
             if (flag === '#{HUB_LOGIN_INDICATOR_COOKIE_VALUE}') {
               container.innerHTML = logged_in_html;
@@ -579,6 +581,7 @@ module HubSsoLib
             # login indications should thus arise from cached data.
           }
           hubSsoLibLoginStateWriteLink();
+          window.addEventListener('load',     hubSsoLibLoginStateWriteLink);
           window.addEventListener('pageshow', hubSsoLibLoginStateWriteLink);
         </script>
       HTML
