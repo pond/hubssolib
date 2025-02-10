@@ -33,7 +33,7 @@ module AccountHelper
   #
   def list_actions( user )
     tag.td(class: 'actions') do
-      tag.div(class: 'simple_flex_row space_around') do
+      tag.div(class: 'simple_flex_row space_around with_gaps') do
         concat(link_to('Details', action: 'show', id: user.id))
         concat(
           button_to(

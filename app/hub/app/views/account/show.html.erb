@@ -40,14 +40,10 @@
   </tr>
 </table>
 
-<table border="0" cellspacing="0" cellpadding="6" align="center">
-  <tr valign="top" align="center">
-    <td><%= make_action_link('tasks', 'index', 80, 80, 'Control<br />panel') %></td>
-    <td>&nbsp;&nbsp;</td>
-    <td><%= make_action_link('account', 'list', 80, 80, 'Return<br />to&nbsp;list', @referrer) %></td>
-    <td>&nbsp;&nbsp;</td>
-    <td><%= make_protected_action_link('account', 'edit_roles', @user.id, 'Edit<br />roles') %></td>
-    <td>&nbsp;&nbsp;</td>
-    <td class="dangerous"><%= make_protected_action_link('account', 'destroy', @user.id, 'Delete<br />account', 'Are you absolutely sure you want to permanently delete this account?') %></td>
-  </tr>
-</table>
+<br />
+<div class="actions simple_flex_row centred with_gaps">
+  <%= make_action_link('tasks', 'index', 80, 80, 'Control<br />panel') %>
+  <%= make_action_link('account', 'list', 80, 80, 'Return<br />to&nbsp;list', @referrer) %>
+  <%= make_protected_action_link('account', 'edit_roles', @user.id, 'Edit<br />roles') %>
+  <div class="dangerous"><%= make_protected_action_link('account', 'destroy', @user.id, 'Delete<br />account', 'Are you absolutely sure you want to permanently delete this account?') %></div>
+</div>

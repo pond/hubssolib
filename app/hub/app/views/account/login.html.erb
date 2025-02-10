@@ -23,12 +23,11 @@
   Other options:
 </p>
 
-<table border="0" cellspacing="0" cellpadding="6" align="center">
-  <tr valign="top" align="center">
-    <td><%= make_action_link('tasks', 'index', 80, 80, 'Control<br />panel') %></td>
-    <td>&nbsp;&nbsp;</td>
-    <td><%= make_action_link('account', 'forgot_password', 80, 80, 'Forgotten<br />password?') %></td>
-    <td>&nbsp;&nbsp;</td>
-    <td><%= make_action_link('account', 'new', 80, 80, 'Sign up!') %></td>
-  </tr>
-</table>
+<!-- (NetSurf doesn't like "justify-content: center"; this works around it) -->
+<div style="text-align: center"><div style="display: inline-block;">
+  <div class="actions simple_flex_row centred with_gaps">
+    <%= make_action_link('tasks', 'index', 80, 80, 'Control<br />panel') %>
+    <%= make_action_link('account', 'forgot_password', 80, 80, 'Forgotten<br />password?') %>
+    <%= make_action_link('account', 'new', 80, 80, 'Sign up!') %>
+  </div>
+</div></div>

@@ -9,36 +9,29 @@
   listed below.
 </p>
 
-<table border="0" cellspacing="0" cellpadding="6" align="center">
-   <tr valign="top" align="center">
+<!-- (NetSurf doesn't like "justify-content: center"; this works around it) -->
+<div style="text-align: center"><div style="display: inline-block;">
+  <div class="actions simple_flex_row centred with_gaps">
     <% if hubssolib_logged_in? -%>
-      <td><%= make_action_link('account', 'logout', 80, 80, 'Log out') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><%= make_action_link('account', 'change_password', 80, 80, 'Change<br />password') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><%= make_action_link('account', 'change_details', 80, 80, 'Update<br />details') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td class="dangerous"><%= make_protected_action_link('account', 'delete', nil, 'Delete<br />account') %></td>
+      <%= make_action_link('account', 'logout', 80, 80, 'Log out') %>
+      <%= make_action_link('account', 'change_password', 80, 80, 'Change<br />password') %>
+      <%= make_action_link('account', 'change_details', 80, 80, 'Update<br />details') %>
+      <div class="dangerous"><%= make_protected_action_link('account', 'delete', nil, 'Delete<br />account') %></div>
     <% else -%>
-      <td><%= make_action_link('account', 'login', 80, 80, 'Log in') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><%= make_action_link('account', 'forgot_password', 80, 80, 'Forgotten<br />password?') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><%= make_action_link('account', 'new', 80, 80, 'Sign up!') %></td>
+      <%= make_action_link('account', 'login', 80, 80, 'Log in') %>
+      <%= make_action_link('account', 'forgot_password', 80, 80, 'Forgotten<br />password?') %>
+      <%= make_action_link('account', 'new', 80, 80, 'Sign up!') %>
     <% end -%>
-   </tr>
-</table>
+  </div>
+</div></div>
 
 <% if hubssolib_logged_in? && hubssolib_authorized?('list', AccountController) -%>
   <p>
     Administrative options:
   </p>
 
-  <table border="0" cellspacing="0" cellpadding="6" align="center">
-    <tr valign="top" align="center">
-      <td><%= make_action_link('account', 'list', 80, 80, 'List accounts') %></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><%= make_action_link('account', 'enumerate', 80, 80, 'Active users') %></td>
-    </tr>
-  </table>
+  <div class="actions simple_flex_row centred with_gaps">
+    <%= make_action_link('account', 'list', 80, 80, 'List accounts') %>
+    <%= make_action_link('account', 'enumerate', 80, 80, 'Active users') %>
+  </div>
 <%   end -%>

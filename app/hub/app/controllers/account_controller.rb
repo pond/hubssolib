@@ -563,7 +563,8 @@ class AccountController < ApplicationController
     # out.
     #
     def clear_all_known_session_related_cookies
-      cookies.delete('hubapp_shared_id') # HubSsoLib::Core#hubssolib_account_link depends upon this
+      cookies.delete(HubSsoLib::HUB_COOKIE_NAME)
+      cookies.delete(HubSsoLib::HUB_LOGIN_INDICATOR_COOKIE)
 
       cookies.to_h.keys.each do | key |
         cookies.delete(key) if key.end_with?('app_session') # E.g. 'hubapp_session', 'beastapp_session'

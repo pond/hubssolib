@@ -7,8 +7,8 @@
 
 /* Button-based dangerous action links */
 
-table td.dangerous img,
-table td.dangerous input[type='image']
+div.dangerous img,
+div.dangerous input[type='image']
 {
   border: 2px solid #966;
   background: #fee;
@@ -19,6 +19,20 @@ table td input[type='image']
 {
   border: none;
   background: inherit;
+}
+
+/* Table-like action grids that use flexbox instead */
+
+div.actions
+{
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+div.actions div
+{
+  padding: 5px 10px;
+  text-align: center;
 }
 
 /* Icon-based buttons */
@@ -75,4 +89,15 @@ div.exception p
 {
   margin: 0;
   padding: 0;
+}
+
+/* A bit of help for very narrow viewports */
+
+@media (max-width: 480px) {
+  table.horizontal input[type='text'    ],
+  table.horizontal input[type='search'  ],
+  table.horizontal input[type='password'] {
+    box-sizing: border-box;
+    width:      100%;
+  }
 }

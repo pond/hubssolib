@@ -89,7 +89,7 @@ module ApplicationHelper
 
     end
 
-    return html
+    return tag.div(html) # DIV wrapper to help with flexbox use cases
   end
 
   # Make a protected link to the given controller and action with the given ID,
@@ -120,6 +120,6 @@ module ApplicationHelper
       html << text.html_safe
     end
 
-    return html
+    return tag.div(html) # DIV wrapper to help with flexbox use cases
   end
 end
