@@ -1,5 +1,5 @@
 coverage/
 hubssolib-*.gem
 .DS_Store
-server/log
+server/logs/*.log
 nohup.out
