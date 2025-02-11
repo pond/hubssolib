@@ -1,6 +1,6 @@
 #######################################################################
 # Server:  hub_sso_server.rb                                          #
-#          (C) Hipposoft 2006-2019                                    #
+#          (C) Hipposoft 2006-2025                                    #
 #                                                                     #
 # Purpose: Cross-application same domain single sign-on support:      #
 #          RAM cache based authorisation server, a DRb server that    #
@@ -12,8 +12,15 @@
 #######################################################################
 
 require 'rubygems'
+require 'drb'
+require 'base64'
 require 'hub_sso_lib'
 
 include HubSsoLib::Server
+
+# Unbuffered I/O - anything streaming out logs will see output immediately.
+#
+$stdout.sync = true
+$stderr.sync = true
 
 hubssolib_launch_server()
