@@ -11,8 +11,8 @@ Rails.application.configure do
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
 
-  # Do not eager load code on boot.
-  config.eager_load = false
+  # Eager load code on boot, to detect issues early.
+  config.eager_load = true
 
   # Show full error reports.
   config.consider_all_requests_local = true
