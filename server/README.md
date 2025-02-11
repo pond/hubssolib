@@ -12,12 +12,18 @@ bundle install
 
 Some basic information about sessions is printed to `$stdout` by default:
 
-```
+```shell
 bundle exec ruby hub_sso_server.rb &
 ```
 
 Turn off the output entirely by setting environment variable `HUB_QUIET_SERVER` to `yes`, e.g. with:
 
-```
+```shell
 HUB_QUIET_SERVER=yes bundle exec ruby hub_sso_server.rb &
+```
+
+Detach from shell and log to the "logs" folder:
+
+```shell
+nohup bundle exec ruby hub_sso_server.rb 1>> "logs/${tree}_stdout.log" 2>> "logs/${tree}_stderr.log" &
 ```
