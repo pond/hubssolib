@@ -1,0 +1,103 @@
+/* Hub stylesheet.
+ *
+ * Very distantly based on the Collaboa default stylesheet.
+ */
+
+@import url("https://www.riscosopen.org/css/risc_os_open_2025.css");
+
+/* Button-based dangerous action links */
+
+div.dangerous img,
+div.dangerous input[type='image']
+{
+  border: 2px solid #966;
+  background: #fee;
+  margin: 1px;
+}
+
+table td input[type='image']
+{
+  border: none;
+  background: inherit;
+}
+
+/* Table-like action grids that use flexbox instead */
+
+div.actions
+{
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+div.actions div
+{
+  padding: 5px 10px;
+  text-align: center;
+}
+
+/* Icon-based buttons */
+
+div.content a.image,
+div.content a.image:hover
+{
+  background: inherit;
+  border: none;
+}
+
+/* Contains Pagy navigation */
+
+div.pagination {
+  text-align: left;
+}
+
+/* Special Hub cases for listing tables */
+
+table.listing  td.yes,
+table.bordered td.yes
+{
+  background-color: #dfd8;
+  text-align: center;
+}
+
+table.listing  td.no,
+table.bordered td.no
+{
+  background-color: #fdb8;
+  text-align: center;
+}
+
+table.listing  td.expired,
+table.bordered td.expired
+{
+  background-color: #fdd8;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Exception handling */
+
+div.exception
+{
+  border: 1px solid #aaa;
+  background: #eee;
+  padding: 10px;
+  color: #A77;
+  font-size: 90%
+}
+
+div.exception p
+{
+  margin: 0;
+  padding: 0;
+}
+
+/* A bit of help for very narrow viewports */
+
+@media (max-width: 480px) {
+  table.horizontal input[type='text'    ],
+  table.horizontal input[type='search'  ],
+  table.horizontal input[type='password'] {
+    box-sizing: border-box;
+    width:      100%;
+  }
+}
