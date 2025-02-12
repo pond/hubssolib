@@ -14,6 +14,12 @@ Rails.application.configure do
   # Eager load code on boot, to detect issues early.
   config.eager_load = true
 
+  # Production assets are compiled on dev machines to avoid heavy deployment env
+  # dependencies, but this means we need to avoid those assets during dev work.
+  # The presence of "public/assets/.manifest.json" causes that behaviour, so
+  # override with a non-existent path as a hack to work around the problem.
+  config.assets.manifest_path = Rails.root.join('public','assets','.does_not_exist.json')
+
   # Show full error reports.
   config.consider_all_requests_local = true
 
