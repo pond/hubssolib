@@ -9,7 +9,7 @@ namespace :assets do
     manifest_updated_at    = File.mtime(manifest_file_path) rescue nil
 
     if manifest_updated_at.nil?
-      abort('Production assets have not been precompiled or are damaged') # NOTE EARLY EXIT
+      abort('ERROR: Production assets have not been precompiled or are damaged') # NOTE EARLY EXIT
     end
 
     assets_updated_at = Rails.application.config.assets.paths.map do | asset_folder_path |
@@ -27,9 +27,9 @@ namespace :assets do
     # NOTE EARLY EXITS
     #
     if newest_asset_updated_at.nil?
-      abort('Could not determine asset age! Assets may be missing?')
+      abort('ERROR: Could not determine asset age! Assets may be missing?')
     elsif newest_asset_updated_at > manifest_updated_at
-      abort('Production assets are outdated')
+      abort('ERROR: Production assets are outated; run "rake assets:productionize"')
     end
 
     puts('...Done. Precompiled assets are up to date.')
