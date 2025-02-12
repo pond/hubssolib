@@ -1,7 +1,12 @@
-/* Hub stylesheet.
- *
- * Very distantly based on the Collaboa default stylesheet.
- */
+/************************************************************************\
+ * File:    application.css                                             *
+ *          Hipposoft 2025                                              *
+ *                                                                      *
+ * Purpose: Application stylesheet, all media types.                    *
+ *          Very distantly based on the Collaboa default stylesheet.    *
+ *                                                                      *
+ * History: 12-Feb-2025 (ADH): RISC OS Open Ltd. 2025 variant finished. *
+\************************************************************************/
 
 @import url("https://www.riscosopen.org/css/risc_os_open_2025.css");
 
