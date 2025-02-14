@@ -1,4 +1,5 @@
 require 'digest/sha1'
+require 'securerandom'
 
 class User < ActiveRecord::Base
 
@@ -29,7 +30,9 @@ class User < ActiveRecord::Base
   before_create        :set_activation_code
   before_create        :set_salt
   before_save          :encrypt_password
+  before_save          :check_for_email_updates
   after_create_commit  :send_welcome_email
+  after_update_commit  :send_reactivation_email_maybe
   after_destroy_commit :send_destruction_email
 
   # See hub_sso_lib.rb extensions for String.
@@ -146,17 +149,10 @@ class User < ActiveRecord::Base
   #
   private
 
-    # Scramble a text representation of the current time and date into randomly
-    # ordered characters, for use in other randomised tokens.
-    #
-    def scramble_time
-      Time.now.to_s.split(//).sort_by { rand }.join()
-    end
-
     # Set a user activation code for activation e-mail messages before-create.
     #
     def set_activation_code
-      self.activation_code = Digest::SHA1.hexdigest(self.scramble_time())
+      self.activation_code = SecureRandom.urlsafe_base64
     end
 
     # Set a unique salt for password encryption before-create. The record ought
@@ -173,11 +169,49 @@ class User < ActiveRecord::Base
       self.crypted_password = self.encrypt(password) if self.password.present?
     end
 
+    # Called before-save. If an existing record is having its e-mail address
+    # changed, reset its activation state. An after-update-commit handler
+    # watches for activation changes and sends a warning e-mail out.
+    #
+    def check_for_email_updates
+      if ! self.new_record? && self.email_changed?
+        self.set_activation_code()
+        self.activated_at = nil
+      end
+    end
+
     # After a new record creation has been committed (after-create-commit) to
     # the database, send the 'welcome' e-mail.
     #
     def send_welcome_email
       UserMailer.with(user: self).signup_notification().deliver_later()
+    end
+
+    # If a record has been set into a reactivation state due to an e-mail
+    # change, deliver an appropriate e-mail message to the new address.
+    #
+    def send_reactivation_email_maybe
+      if self.activated_at.nil?
+
+        # This is probably excessively paranoid but it makes sure that we do
+        # not trip up e.g. during user creation or unexpected future changes;
+        # there must be an e-mail address change from and to a non-blank
+        # value along with an activation code change - that might be from nil
+        # to present, or present-to-present if a user changed an email address
+        # without activation in between (e.g. due to a typo first time around).
+        #
+        code_changes  = self.activation_code_previous_change
+        email_changes = self.email_previous_change
+
+        if (
+          email_changes.present?       &&
+          email_changes.first.present? &&
+          email_changes.last.present?  &&
+          code_changes.present?
+        )
+          UserMailer.with(user: self).reactivation_notification().deliver_later()
+        end
+      end
     end
 
     # When a record has just been deleted and only now remains in existence in
@@ -197,7 +231,7 @@ class User < ActiveRecord::Base
     # Return a password reset code for users who've forgotten their password.
     #
     def make_password_reset_code
-      return Digest::SHA1.hexdigest(self.scramble_time())
+      return SecureRandom.urlsafe_base64
     end
 
 end

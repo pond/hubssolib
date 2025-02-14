@@ -1,3 +1,11 @@
+## 3.2.0 (15-Feb-2025)
+
+Updated for Hub gem version 3.2.0 - participates in the user change handler registration mechanism. A Hub-integrated external application can invoke HubSsoLib::Core#hubssolib_register_user_change_handler to register an interest in Hub user alterations. See the gem's `README.md` for details, under "Applications with an existing user model".
+
+## 3.1.0 (14-Feb-2025)
+
+Updated for Hub gem version 3.1.0, which introduced the configurable `HUB_IDLE_TIME_LIMIT`.
+
 ## 3.0.3 (10-Feb-2025)
 
 Updated for Hub gem version 3.0.3, which has better compatibility with older or more lightweight browsers than the usual mainstream set.

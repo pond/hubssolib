@@ -118,20 +118,20 @@ before_action :hubssolib_beforehand
 after_action :hubssolib_afterwards</pre>
 ```
 
-Within any controller which has actions which you wish to protect with Hub login, define a variable `@@hubssolib_permissions` and provide an accessor method for it. I'll deal with the accessor method first; for a controller called `FooController`, add the following to `foo_controller.rb`:
+Within any controller which has actions which you wish to protect with Hub login, define a constant `HUBSSOLIB_PERMISSIONS` and provide an accessor method for it. I'll deal with the accessor method first; in any controller for which Hub is to guard access, add the following:
 
 ```ruby
-def FooController.hubssolib_permissions
-  @@hubssolib_permissions
+def self.hubssolib_permissions
+  HUBSSOLIB_PERMISSIONS
 end
 ```
 
 More details are provided [below](#permissions) but, in brief, to define the permissions variable you create an instance of `HubSsoLib::Permissions`. The constructor is passed a hash. The hash keys are symbolized names of the controller actions you want to protect. The hash values are an array of privileges required to access the action, from a choice of one or more of `:admin`, `:webmaster`, `:privileged` and `:normal`. These relate to the roles you can assign to accounts as Hub administrator. For example:
 
 ```ruby
-@@hubssolib_permissions = HubSsoLib::Permissions.new({
-  :show => [ :admin, :webmaster, :privileged, :normal ],
-  :edit => [ :admin, :webmaster ]
+HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new({
+  show: [ :admin, :webmaster, :privileged, :normal ],
+  edit: [ :admin, :webmaster ]
 })
 ```
 
@@ -140,14 +140,15 @@ In this example, any user can access the controller's `show` action but only use
 A user's role(s) must match at least one of the privileges in the array for a given action — so even if your account has an administrator role (and _only_ an administrator role), it won't be able to access a protected action unless `:admin` is included in the array given within the hash to the `HubSsoLib::Permissions` constructor. For example:
 
 ```ruby
-@@hubssolib_permissions = HubSsoLib::Permissions.new({
-  :weblist => [ :webmaster, :privileged ]
+HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new({
+  weblist: [ :webmaster, :privileged ]
 })
 ```
 
 Here, only accounts with the webmaster or privileged role associated can access the `weblist` action. If an account has only normal and/or administrative roles, it won't be allowed through.
 
 ### Applications with an existing user model
+#### General concerns
 
 If you want to integrate Hub with an application which already has the concept of user accounts, logging in and logging out, there are two main approaches.
 
@@ -155,6 +156,51 @@ If you want to integrate Hub with an application which already has the concept o
 *   Use a `before_action` in the application controller to run special code which you write, which maps a logged in Hub user to an existing application user. If the visitor is logged into Hub and no corresponding local application user account exists, one is created automatically based on the Hub account credentials.
 
 Neither approach is problem-free and both require quite a lot of effort and testing. Automated testing is very hard because the modified application's behaviour depends upon logging in or out of Hub, which is running elsewhere. Unfortunately Rails doesn't offer a universally supported single sign-on mechanism so applications all use different approaches to user management; this means that there is no magic bullet to integration with Hub. You have to learn and understand the structure of the application being integrated and be prepared to make changes that are potentially quite extensive.
+
+#### Synchronisation concerns, where applicable
+
+Some applications might use local User records for relational purposes. Suppose users could author Posts. We could simply freeze the author name with a Post using a column in that table. This means the author name of any Post is easy to display. However, if that author changed their name, only new Posts would show the new name. If the application wanted to answer a question such as, "List all Posts by a given author", it would be relatively expensive. And if an application wanted to internally keep a record of author e-mail addresses for things like e-mailed notifications of some kind, it would get worse; the author might change their e-mail address in Hub and the integrated application would not know.
+
+To solve these problems, external applications integrated with Hub can participate in the user change handler mechanism. The Hub-integrated external application calls `HubSsoLib::Core#hubssolib_register_user_change_handler` to register an interest in Hub user alterations. The mechanism invokes an application-defined Rake task, which can update user records however it sees fit. The method is given the application's name, it's Rails application root - the filesystem location of the application, since we need to use that as a current working directory to issue a `bundle exec rake your:task:name...` - and the name of the Rake task to run. Registration is usually done in `config/application.rb` - for example:
+
+```ruby
+module Foo
+  class Application < Rails::Application
+    include HubSsoLib::Core
+
+    hubssolib_register_user_change_handler(
+      app_name: Rails.application.name,
+      app_root: Rails.root,
+      task_name: 'hub:update_user'
+    )
+
+    # ...etc...
+  end
+end
+```
+
+The Rake task can have any name that works for your application. A "hub" namespace is recommended but entirely optional. If a Hub user edits their details, then the task is invoked with four positional parameters - the user's old e-mail address and old Hub unique name, as returned by `HubSsoLib::Core#hubssolib_unique_name` - followed by the new e-mail address and new unique name (at least one, or both of those will always have actually changed). The Rake task can then look up the external application's User record via the old address or unique name and, if found, update it. It should either throw an exception or `exit` with a non-zero status code if it fails to store the updated details - in that case, Hub will roll back user changes on its side and warn the end user.
+
+For example, `lib/tasks/hub.rake` might look like this:
+
+```ruby
+namespace :hub do
+  desc 'Update a user with details sent from Hub'
+  task :update_user, [:old_email, :old_name, :new_email, :new_name] => :environment do | t, args |
+    user = User.find_by_email_address(args[:old_email])
+
+    # ...or use "user&.update_columns" for speed and to bypass validations, as
+    # Hub's validations may not be as strict as yours but it doesn't matter if
+    # you're happy syncing Hub data in general.
+    #
+    user&.update!(email_address: args[:new_email], display_name: args[:new_name])
+  end
+end
+```
+
+The four arguments are guaranteed to be present and non-empty, with leading or trailing white space already stripped. You don't need to waste time checking for `nil` or blank values. The upper/lower case **is preserved**, as entered by the user, for all arguments - so e-mail addresses in particular might contain a mixture of upper and lower case letters. If this matters to your application, be sure to apply whatever normalisation you previously used when your user record was originally created with the old Hub-sourced e-mail and/or name.
+
+
 
 ## Hub library API
 
@@ -178,9 +224,9 @@ Hub protects against access to actions in controller by using a `before_action` 
 Permitted roles are expressed as single symbols or their equivalent strings, or an array containing many symbols or equivalent strings. Most often, an array of symbols is used. To create a permissions object, instantiate `HubSsoLib::Permissions`. For example:
 
 ```ruby
-@@hubssolib_permissions = HubSsoLib::Permissions.new({
-  :show => [ :admin, :webmaster, :privileged, :normal ],
-  :edit => [ :admin, :webmaster ]
+HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new({
+  show: [ :admin, :webmaster, :privileged, :normal ],
+  edit: [ :admin, :webmaster ]
 })
 ```
 
@@ -191,7 +237,7 @@ The above line of code typically appears at the start of the class definition fo
 ```ruby
 class AccountController < ApplicationController
 
-  @@hubssolib_permissions = HubSsoLib::Permissions.new({
+  HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new({
     # ...permissions here...
   })
 
@@ -199,11 +245,11 @@ class AccountController < ApplicationController
 end
 ```
 
-Having created the permissions object, you need to expose variable `@@hubssolib_permissions` to Hub in a way that it understands. To do this, create an instance method called `hubssolib_permissions` that just returns the variable:
+Having created the permissions object, you need to expose constant `HUBSSOLIB_PERMISSIONS` to Hub in a way that it understands. To do this, create a class method called `hubssolib_permissions` that just returns the variable:
 
 ```ruby
-  def AccountController.hubssolib_permissions
-    @@hubssolib_permissions
+  def self.hubssolib_permissions
+    HUBSSOLIB_PERMISSIONS
   end
 ```
 
@@ -212,12 +258,12 @@ So the full preamble in this example is:
 ```ruby
 class AccountController < ApplicationController
 
-  @@hubssolib_permissions = HubSsoLib::Permissions.new({
+  HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new({
     ...permissions here...
   })
 
-  def AccountController.hubssolib_permissions
-    @@hubssolib_permissions
+  def self.hubssolib_permissions
+    HUBSSOLIB_PERMISSIONS
   end
 
   ...existing class contents here...

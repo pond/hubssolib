@@ -1,0 +1,7 @@
+<%= UserMailer.hard_wrap "You changed your e-mail address for your account at the #{INSTITUTION_NAME_LONG} web site." %>
+
+<%= UserMailer.hard_wrap "The account must be reactivated in order to validate the new address. If you do not understand why you are receiving this message, somebody may have changed their account to your e-mail address by mistake - please e-mail #{INSTITUTION_NAME_LONG} at #{INSTITUTION_NAME_EMAIL} immediately." %>
+
+<%= UserMailer.hard_wrap "Otherwise, reactivate your account by visiting the following page:" %>
+
+  <%= @url %>

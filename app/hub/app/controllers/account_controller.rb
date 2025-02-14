@@ -11,6 +11,9 @@
 #          11-Apr-2020 (ADH): Rewrote #signup (as #new and #create).  #
 #######################################################################
 
+require 'open3'
+require 'shellwords'
+
 class AccountController < ApplicationController
   layout 'application'
 
@@ -60,15 +63,15 @@ class AccountController < ApplicationController
   #
   HUBSSOLIB_PERMISSIONS = HubSsoLib::Permissions.new(
     {
-      :change_password => [ :admin, :webmaster, :privileged, :normal ],
-      :change_details  => [ :admin, :webmaster, :privileged, :normal ],
-      :delete          => [ :admin, :webmaster, :privileged, :normal ],
-      :delete_confirm  => [ :admin, :webmaster, :privileged, :normal ],
-      :list            => [ :admin, :webmaster, :privileged ],
-      :enumerate       => [ :admin, :webmaster ],
-      :show            => [ :admin, :webmaster ],
-      :edit_roles      => [ :admin ],
-      :destroy         => [ :admin ]
+      change_password: [ :admin, :webmaster, :privileged, :normal ],
+      change_details:  [ :admin, :webmaster, :privileged, :normal ],
+      delete:          [ :admin, :webmaster, :privileged, :normal ],
+      delete_confirm:  [ :admin, :webmaster, :privileged, :normal ],
+      list:            [ :admin, :webmaster, :privileged          ],
+      enumerate:       [ :admin, :webmaster                       ],
+      show:            [ :admin, :webmaster                       ],
+      edit_roles:      [ :admin                                   ],
+      destroy:         [ :admin                                   ],
     }
   )
 
@@ -142,26 +145,8 @@ class AccountController < ApplicationController
     @user = User.new(allowed_user_params())
 
     if @user.email.present?
-      @user.email      = @user.email.strip()
-      lower_email      = @user.email.downcase()
-      is_prohibited    = PROHIBITED_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) }
-      is_google_domain =     GOOGLE_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) } unless is_prohibited
-
-      if is_google_domain
-        canonical_lower_email = lower_email.gsub('.', '')
-        lower_email_prefix    = canonical_lower_email.gsub(/[+@].*$/, '')
-        is_prohibited         = PROHIBITED_GOOGLE_PREFIXES.any? { | prefix | prefix == lower_email_prefix }
-      end
-
-      if is_prohibited
-        hubssolib_set_flash(
-          :attention,
-          t('signup.blocked', institution_name_short: INSTITUTION_NAME_SHORT)
-        )
-
-        redirect_to root_path()
-        return # NOTE EARLY EXIT
-      end
+      @user.email = @user.email.strip()
+      return if redirect_if_prohibited!(@user.email) # NOTE EARLY EXIT
     end
 
     # A simple home-brew maths sort-of-captcha on top of the honeypot.
@@ -270,20 +255,128 @@ class AccountController < ApplicationController
   end
 
   def change_details
-    @title     = 'Update account details'
-    @user      = to_real_user(self.hubssolib_current_user)
-    @real_name = @user ? @user.real_name || '' : ''
+    @title = 'Update account details'
+    @user  = to_real_user(self.hubssolib_current_user)
 
-    return unless request.post?
+    return if request.get? # NOTE EARLY EXIT
 
-    @user.real_name = @real_name = params[:real_name]
-    success = @user.save
+    success           = false
+    email_changed     = false
+    real_name_changed = false
+    old_email         = @user.email
+    old_real_name     = @user.real_name
+    old_unique_name   = "#{old_real_name} (#{@user.id})"
+    new_email         = (params.dig(:user, :email    ) || old_email    ).strip
+    new_real_name     = (params.dig(:user, :real_name) || old_real_name).strip
+    new_unique_name   = "#{new_real_name} (#{@user.id})"
 
-    if success
-      self.hubssolib_current_user = from_real_user(@user)
-      hubssolib_set_flash(:notice, 'Account details updated successfully.')
-      redirect_to root_path()
+    User.transaction do
+      @user.email       = new_email
+      @user.real_name   = new_real_name
+      real_name_changed = @user.real_name_changed?
+      email_changed     = @user.email_changed?
+
+      # This might invoke a redirection...
+      #
+      if email_changed && redirect_if_prohibited!(@user.email)
+        raise ActiveRecord::Rollback # NOTE TRANSACTION ROLLBACK AND BLOCK EXIT
+      end
+
+      success = @user.save
+
+      if success && (real_name_changed || email_changed)
+        successful_commands = []
+
+        hubssolib_registered_user_change_handlers().each do | app_name, details |
+          command_root = details['root']
+          command_task = details['task']
+
+          # THIS ORDERING IS IMPORTANT AND MUST BE PRESERVED else dependent
+          # Rake tasks will break. Rake only supports positional arguments.
+          #
+          rake_task_args_string = [
+            old_email,
+            old_unique_name,
+            new_email,
+            new_unique_name
+          ].join(', ')
+
+          stdout = ''
+          stderr = ''
+          status = nil
+
+          Bundler.with_clean_env do
+            stdout, stderr, status = Open3.capture3(
+              'bundle',
+              'exec',
+              'rake',
+              "#{command_task}[#{rake_task_args_string}]",
+
+              chdir: command_root
+            )
+          end
+
+          if status.exitstatus == 0
+            successful_commands << app_name.inspect
+          else
+            message = "When updating details of Hub user ID #{@user.id} to #{new_email.inspect} and #{new_unique_name}, task #{command_task.inspect} for #{app_name.inspect} failed with stderr #{stderr.inspect} and stdout #{stdout.inspect}. "
+
+            if successful_commands.empty?
+              message << 'No other commands ran beforehand (manual clean-up is not required).'
+            else
+              message << "WARNING: Manual clean-up requried - previously successful command(s) were run for: #{successful_commands.join(', ')}."
+            end
+
+            raise message
+          end
+        end
+
+        if email_changed
+          hubssolib_log_out()
+          self.clear_all_known_session_related_cookies()
+          hubssolib_set_flash(:attention, 'You are now logged out because your account needs reactivation. Please check your new e-mail address for instructions.')
+        else
+          self.hubssolib_current_user = from_real_user(@user)
+          hubssolib_set_flash(:notice, 'Account details updated successfully.')
+        end
+
+        redirect_to root_path()
+      end
+
+    rescue ActiveRecord::Rollback
+      #
+      # Do nothing - let the block exit. This is only here because of the broad
+      # exception handler below. Without that, Rollback exceptions are trapped
+      # by ActiveRecord and exit quietly anyway - that's what they're for.
+
+    rescue => e
+      Sentry.configure_scope do |scope|
+        scope.set_context(
+          'hub_user_details_changed',
+          {
+            old_email:            old_email,
+            new_email:            new_email,
+            old_unique_real_name: "#{old_real_name} (#{@user.id})",
+            new_unique_real_name: "#{new_real_name} (#{@user.id})",
+          }
+        )
+
+        Sentry.capture_exception(e)
+
+        hubssolib_set_flash(
+          :alert,
+          "An internal error occurred and your details could not be changed. #{INSTITUTION_NAME_LONG} should be aware of the error, but if in doubt, please send an e-mail to #{INSTITUTION_NAME_EMAIL}."
+        )
+
+        redirect_to root_path()
+        raise ActiveRecord::Rollback
+      end
     end
+
+    # If we get here, there might have been a redirection to root for either
+    # various success or failure cases - or nothing, yet. In that case the
+    # form is just rendered normally, for simple validation error cases.
+    #
   end
 
   def forgot_password
@@ -633,6 +726,34 @@ class AccountController < ApplicationController
       user.user_updated_at                     = real_user.updated_at.to_s
 
       return user
+    end
+
+    # If the given e-mail address is in any of the prohibition lists, redirect
+    # to root with an appropriate Flash warning and return +true+, else return
+    # +false+.
+    #
+    def redirect_if_prohibited!(intended_email)
+      lower_email      = intended_email.strip.downcase()
+      is_prohibited    = PROHIBITED_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) }
+      is_google_domain =     GOOGLE_EMAIL_DOMAINS.any? { | domain | lower_email.end_with?(domain) } unless is_prohibited
+
+      if is_google_domain
+        canonical_lower_email = lower_email.gsub('.', '')
+        lower_email_prefix    = canonical_lower_email.gsub(/[+@].*$/, '')
+        is_prohibited         = PROHIBITED_GOOGLE_PREFIXES.any? { | prefix | prefix == lower_email_prefix }
+      end
+
+      if is_prohibited
+        hubssolib_set_flash(
+          :attention,
+          t('signup.blocked', institution_name_short: INSTITUTION_NAME_SHORT)
+        )
+
+        redirect_to root_path()
+        return true
+      else
+        return false
+      end
     end
 
     def save_password_and_set_flash(user)

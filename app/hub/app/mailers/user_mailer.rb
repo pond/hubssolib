@@ -1,4 +1,4 @@
-# Unless docuemnted, all e-mail sending methods take a 'user' parameter which
+# Unless documented, all e-mail sending methods take a 'user' parameter which
 # is set to the User record representing the e-mail's intended recipient.
 #
 class UserMailer < ApplicationMailer
@@ -37,6 +37,19 @@ class UserMailer < ApplicationMailer
     mail(
       to:      @user.email,
       subject: "[#{INSTITUTION_NAME_SHORT}] Your web site account has been activated"
+    )
+  end
+
+  def reactivation_notification
+    @user = params[:user]
+    @url  = url_for(controller: :account,
+                    action:     :activate,
+                    id:         @user.activation_code,
+                    protocol:   'https')
+
+    mail(
+      to:      @user.email,
+      subject: "[#{INSTITUTION_NAME_SHORT}] Please reactivate your account"
     )
   end
 

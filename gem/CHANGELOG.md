@@ -1,3 +1,7 @@
+## 3.2.0, 15-Feb-2025
+
+Introduces the user change handler mechanism, a scheme whereby an external application tells Hub about a Rake task that the application has implemented, through which Hub can inform if of changes to a user's e-mail address or "real" name. See the gem's `README.md` for details, under "Applications with an existing user model".
+
 ## 3.1.0, 14-Feb-2025
 
 Environment variable `HUB_IDLE_TIME_LIMIT` can be used to override the idle timeout, with a value expressed in seconds. It must be set in the environment of any application using Hub, including the Hub application itself.

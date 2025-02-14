@@ -1,5 +1,7 @@
-<%= UserMailer.hard_wrap "Thanks for signing up to the #{INSTITUTION_NAME_LONG} web site. Your account has been created, using the e-mail address to which this message has been sent." %>
+<%= UserMailer.hard_wrap "Thanks for signing up to the #{INSTITUTION_NAME_LONG} web site. Your account has been created, using the e-mail address to which this message was sent." %>
 
-<%= UserMailer.hard_wrap "The site requires accounts to be activated in order to use them. If you do not understand why you are receiving this message, somebody may have tried to create an account using your address without your permission. Otherwise, please activate your account by visiting the following Web page:" %>
+<%= UserMailer.hard_wrap "The site requires accounts to be activated in order to use them. If you do not understand why you are receiving this message, somebody may have created an account using your address without your permission - if in doubt, please e-mail #{INSTITUTION_NAME_LONG} at #{INSTITUTION_NAME_EMAIL}." %>
+
+<%= UserMailer.hard_wrap "Otherwise, activate your account by visiting the following page:" %>
 
   <%= @url %>

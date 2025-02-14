@@ -19,6 +19,7 @@ module HubSsoLib
 
   require 'drb'
   require 'securerandom'
+  require 'json'
 
   # DRb connection
   HUB_CONNECTION_URI = ENV['HUB_CONNECTION_URI'] || 'drbunix:' + File.join( ENV['HOME'] || '/', '/.hub_drb')
@@ -27,6 +28,19 @@ module HubSsoLib
     puts
     puts '*' * 80
     puts "You *must* use a 'drbunix:' scheme for HUB_CONNECTION_URI (#{ HUB_CONNECTION_URI.inspect } is invalid)"
+    puts '*' * 80
+    puts
+
+    raise 'Exiting'
+  end
+
+  # External application command registry for on-user-change events
+  HUB_COMMAND_REGISTRY = ENV['HUB_COMMAND_REGISTRY'] || File.join( ENV['HOME'] || '/', '/.hub_cmd_reg')
+
+  unless Dir.exist?(File.dirname(HUB_COMMAND_REGISTRY))
+    puts
+    puts '*' * 80
+    puts "Invalid path specified by HUB_COMMAND_REGISTRY (#{ HUB_COMMAND_REGISTRY.inspect })"
     puts '*' * 80
     puts
 
@@ -710,9 +724,96 @@ module HubSsoLib
       user ? "#{user.user_real_name} (#{user.user_id})" : 'Anonymous'
     end
 
-    # Main filter method to implement HubSsoLib permissions management,
-    # session expiry and so-on. Call from controllers only, always as a
-    # before_fitler.
+    # If an application needs to know about changes of a user e-mail address
+    # or display name (e.g. because of sync to a local relational store of
+    # users related to other application-managed resources, with therefore a
+    # desire to keep that store up to date), it can register a task to run
+    # on-change here. When a user edits their information, Hub runs through
+    # all such commands, allowing external applications to manage their own
+    # state with no need for coupled configuration or other duplication.
+    #
+    # The registered name must be a Rake task and the application must specify
+    # its location in the filesystem so that the PWD can be changed there, in
+    # order to execute the Rake task via "bundle exec". The task is passed the
+    # following parameters, in the specified order:
+    #
+    # - User's old e-mail address
+    # - User's old unique display name (as returned by #hubssolib_unique_name)
+    # - User's new e-mail address (which might be the same as the old)
+    # - User's old unique display name (which might be unchanged too)
+    #
+    # This is a newer Hub interface which uses named parameters rather than
+    # positional:
+    #
+    # +app_name+::  Application name, e.g. "beast"; make sure this is unique.
+    # +app_root+::  Application's Rails root, e.g. "/home/fred/rails/beast".
+    # +task_name+:: Rake task name, e.g. "hub:update_user".
+    #
+    # An example invocation in "config/application.rb" might look like this:
+    #
+    #     module Foo
+    #       class Application < Rails::Application
+    #         require HubSsoLib::Core
+    #
+    #         hubssolib_register_user_change_handler(
+    #           app_name:  Rails.application.name,
+    #           app_root:  Rails.root,
+    #           task_name: 'hub:update_user'
+    #         )
+    #
+    #         config.load_defaults 8.0 # ...etc...
+    #       end
+    #     end
+    #
+    def hubssolib_register_user_change_handler(app_name:, app_root:, task_name:)
+      File.open(HUB_COMMAND_REGISTRY, File::RDWR | File::CREAT) do |file|
+        file.flock(File::LOCK_EX)
+
+        commands_json   = file.read()
+        commands_hash   = (JSON.parse(commands_json) rescue nil) if commands_json.present?
+        commands_hash ||= {}
+
+        file.rewind()
+
+        commands_hash[app_name] = {
+          root: app_root,
+          task: task_name
+        }
+
+        file.write(JSON.fast_generate(commands_hash))
+        file.truncate(file.pos)
+      end
+    end
+
+    # Returns all change handlers registered by prior calls made to
+    # #hubssolib_register_user_change_handler. Returns a Hash, keyed by Rails
+    # application name, with values of another Hash:
+    #
+    # * +root+ => Rails application root
+    # * +task+ => Name of Rake task to be run
+    #
+    # All keys are Strings.
+    #
+    # This is usually called by the Hub application only, when it is processing
+    # a user's request to change their information.
+    #
+    def hubssolib_registered_user_change_handlers
+      commands_hash = {}
+
+      File.open(HUB_COMMAND_REGISTRY, File::RDWR | File::CREAT) do |file|
+        file.flock(File::LOCK_EX)
+
+        commands_json   = file.read()
+        commands_hash   = (JSON.parse(commands_json) rescue nil) if commands_json.present?
+        commands_hash ||= {}
+      end
+
+      return commands_hash
+    end
+
+    # Mandatory controller "before_action" callback method which activates
+    # HubSsoLib permissions management, session expiry and so-on. Usually
+    # invoked in ApplicationController.
     #
     def hubssolib_beforehand
 
@@ -794,7 +895,8 @@ module HubSsoLib
       end
     end
 
-    # Main after_filter method to tidy up after running state changes.
+    # Mandatory controller "after_action" callback method to tidy up after Hub
+    # actions during a request. Usually invoked in ApplicationController.
     #
     def hubssolib_afterwards
       begin

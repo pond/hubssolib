@@ -17,7 +17,7 @@ Rails.application.routes.draw do
     # GET or POST routes to the same action (VERY old-fashioned Rails code).
     #
     match :login,               to: 'account#login',           via: [:get, :post]
-    match :change_details,      to: 'account#change_details',  via: [:get, :post]
+    match :change_details,      to: 'account#change_details',  via: [:get, :patch]
     match :change_password,     to: 'account#change_password', via: [:get, :post]
     match :forgot_password,     to: 'account#forgot_password', via: [:get, :post]
 
