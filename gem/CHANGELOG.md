@@ -1,3 +1,7 @@
+## 3.1.0, 14-Feb-2025
+
+Environment variable `HUB_IDLE_TIME_LIMIT` can be used to override the idle timeout, with a value expressed in seconds. It must be set in the environment of any application using Hub, including the Hub application itself.
+
 ## 3.0.3, 10-Feb-2025
 
 Change JavaScript code used for the login indicator so that simpler engines such as [Duktape](https://duktape.org) can run it. Operates correctly in script-enabled [NetSurf](https://www.netsurf-browser.org) now.

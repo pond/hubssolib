@@ -48,13 +48,15 @@ Finally you can install the Hub application using whatever mechanism you prefer 
 
 Some configuration is needed using externally set environment variables. These are actually picked up by the Hub gem but you won't know what values to set until the application, DRb server and gem are all installed.
 
-*   `HUB_CONNECTION_URI` — as already discussed, this holds a DRb URI giving the connection socket on which the server listens and to which clients connect; it defaults to `~/.hub_drb`.
-*   `HUB_PATH_PREFIX` — sometimes the Hub Gem redirects to various locations within the Hub application. If you have installed the application away from document root, specify the prefix to put onto redirection paths here (otherwise, provide an empty string). For example, when redirecting to the `account` controller's `login` method, the path used is `HUB_PATH_PREFIX + '/account/login'`.
-*   `HUB_BYPASS_SSL` - normally Hub sets cookies as secure-only in Production mode, requiring `https` fetches. This isn't enforced in e.g. development mode. If you want to allow insecure transport in Production, set `HUB_BYPASS_SSL` to `true`.
+* `HUB_CONNECTION_URI` — as already discussed, this holds a DRb URI giving the connection socket on which the server listens and to which clients connect; it defaults to `~/.hub_drb`.
+* `HUB_PATH_PREFIX` — sometimes the Hub Gem redirects to various locations within the Hub application. If you have installed the application away from document root, specify the prefix to put onto redirection paths here (otherwise, provide an empty string). For example, when redirecting to the `account` controller's `login` method, the path used is `HUB_PATH_PREFIX + '/account/login'`.
+* `HUB_BYPASS_SSL` - normally Hub sets cookies as secure-only in Production mode, requiring `https` fetches. This isn't enforced in e.g. development mode. If you want to allow insecure transport in Production, set `HUB_BYPASS_SSL` to `true`.
 
-Usually, these are set up in a Web server configuration file as part of launching an FCGI process to host the Hub application.
+Usually, these are set up in a Web server configuration file as part of launching an FCGI process to host the Hub application. Don't forget to set up the application's `database.yml` file in the usual fashion. use `rake db:migrate` to build the empty database structure.
 
-Don't forget to set up the application's `database.yml` file in the usual fashion. use `rake db:migrate` to build the empty database structure.
+Optional environment variables for configuration are:
+
+* `HUB_IDLE_TIME_LIMIT` - by default Hub applies a 4 hour session idle timeout. Override by setting this variable to a number **in seconds**. This must be set equally in the environment of **all applications using Hub** including Hub itself, since it is the "beforehand" callback that checks the idle timer; this can run at any time in any of your collection of Hub-integrated applications, depending on the part of your site with which the user next interacts.
 
 ## Cookies and domains
 
@@ -105,7 +107,7 @@ For full integration with Hub, particularly when it comes to showing or hiding t
 
 Applications with no concept of user log-in are easy to integrate with Hub. Applications with only the concept of logging in for administrative purposes are similarly easy, provided your administrators do not mind having to log in using the application's own administrative mechanisms (so you basically treat the application as if it has no existing user model).
 
-To integrate, add the Hub filters into `application.rb` just inside the definition of the `ApplicationController` class:
+To integrate, add the Hub callbacks into `application.rb` just inside the definition of the `ApplicationController` class:
 
 ```ruby
 # Hub single sign-on support.
@@ -149,7 +151,7 @@ Here, only accounts with the webmaster or privileged role associated can access 
 
 If you want to integrate Hub with an application which already has the concept of user accounts, logging in and logging out, there are two main approaches.
 
-*   Remove the existing mechanism and replace with Hub (see above). Removal may be through actually deleting code, models and filters related to that mechanism or simply removing or blocking access to the parts of the application that deal with the users and dropping in Hub equivalents over a minimum amount of code, reducing overall changes to the application but leaving a less clean result.
+*   Remove the existing mechanism and replace with Hub (see above). Removal may be through actually deleting code, models and callbacks related to that mechanism or simply removing or blocking access to the parts of the application that deal with the users and dropping in Hub equivalents over a minimum amount of code, reducing overall changes to the application but leaving a less clean result.
 *   Use a `before_action` in the application controller to run special code which you write, which maps a logged in Hub user to an existing application user. If the visitor is logged into Hub and no corresponding local application user account exists, one is created automatically based on the Hub account credentials.
 
 Neither approach is problem-free and both require quite a lot of effort and testing. Automated testing is very hard because the modified application's behaviour depends upon logging in or out of Hub, which is running elsewhere. Unfortunately Rails doesn't offer a universally supported single sign-on mechanism so applications all use different approaches to user management; this means that there is no magic bullet to integration with Hub. You have to learn and understand the structure of the application being integrated and be prepared to make changes that are potentially quite extensive.
@@ -247,7 +249,7 @@ Before any action in a Hub integrated application, `hubssolib_beforehand` must b
 before_action :hubssolib_beforehand
 ```
 
-The filter is the core of the Hub protection mechanism, making sure that no action can run unless the user is logged in (unless the action is completely protected) and their account is associated with at least one of the roles required to access the action.
+This callback is the core of the Hub protection mechanism, making sure that no action can run unless the user is logged in (unless the action is completely protected) and their account is associated with at least one of the roles required to access the action.
 
 #### The "after" action: `hubssolib_afterwards`
 
@@ -256,8 +258,6 @@ After any action in a Hub integrated application, `hubssolib_afterward` must be 
 ```ruby
 after_action :hubssolib_afterwards
 ```
-
-At the time of writing the filter does nothing, but is included to allow for future expansion and avoid API changes that might force application integrators to modify their code.
 
 #### Finding out about the current user
 

@@ -34,12 +34,14 @@ module HubSsoLib
   end
 
   # Location of Hub application root.
+  #
   HUB_PATH_PREFIX = ENV['HUB_PATH_PREFIX'] || ''
 
   # Time limit, *in seconds*, for the account inactivity timeout.
   # If a user performs no Hub actions during this time they will
   # be automatically logged out upon their next action.
-  HUB_IDLE_TIME_LIMIT = 4 * 60 * 60
+  #
+  HUB_IDLE_TIME_LIMIT = ENV['HUB_IDLE_TIME_LIMIT']&.to_i || 4 * 60 * 60
 
   # Shared cookie name.
   HUB_COOKIE_NAME = :hubapp_shared_id
