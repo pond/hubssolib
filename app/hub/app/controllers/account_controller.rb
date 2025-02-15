@@ -307,6 +307,8 @@ class AccountController < ApplicationController
 
           Bundler.with_clean_env do
             stdout, stderr, status = Open3.capture3(
+              {'SECRET_KEY_BASE' => 'irrelevant'},
+
               'bundle',
               'exec',
               'rake',
