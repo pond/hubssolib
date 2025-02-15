@@ -66,8 +66,9 @@ class ApplicationController < ActionController::Base
     # works.
     #
     def set_email_host
-      Rails.application.config.action_mailer.default_url_options ||= {}
-      Rails.application.config.action_mailer.default_url_options[:host] = request.host_with_port
+      unless ( ActionMailer::Base.default_url_options.has_key?( :host ) )
+        ActionMailer::Base.default_url_options[ :host ] = request.host_with_port
+      end
     end
 
 end
