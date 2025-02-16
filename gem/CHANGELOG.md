@@ -1,3 +1,7 @@
+## 3.3.0, 16-Feb-2025
+
+Sentry support, for use by the DRb server. If you use Sentry, define your account's `SENTRY_DSN` in the environment where the DRb server runs and exceptions will be reported.
+
 ## 3.2.1, 16-Feb-2025
 
 The conditional login return-via-referrer mechanism never really worked, so instead have the login status indicator link generate a return-to URL in the query string instead and forward that, if present, in preference.

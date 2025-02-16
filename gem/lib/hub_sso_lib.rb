@@ -412,6 +412,10 @@ module HubSsoLib
       @session_user         = HubSsoLib::User.new
       @session_key_rotation = nil
       @session_ip           = nil
+
+    rescue => e
+      Sentry.capture_exception(e) if defined?(Sentry) && Sentry.respond_to?(:capture_exception)
+      raise
     end
   end # Session class
 
@@ -433,6 +437,10 @@ module HubSsoLib
       @hub_sessions = {}
 
       puts "Session factory: Awaken" unless @hub_be_quiet
+
+    rescue => e
+      Sentry.capture_exception(e) if defined?(Sentry) && Sentry.respond_to?(:capture_exception)
+      raise
     end
 
     # Get a session using a given key (a UUID). Generates a new session if
@@ -481,10 +489,18 @@ module HubSsoLib
 
       hub_session.session_key_rotation = new_key
       return hub_session
+
+    rescue => e
+      Sentry.capture_exception(e) if defined?(Sentry) && Sentry.respond_to?(:capture_exception)
+      raise
     end
 
     def enumerate_hub_sessions()
       @hub_sessions
+
+    rescue => e
+      Sentry.capture_exception(e) if defined?(Sentry) && Sentry.respond_to?(:capture_exception)
+      raise
     end
   end
 
@@ -511,6 +527,10 @@ module HubSsoLib
       @@hub_session_factory = HubSsoLib::SessionFactory.new
       DRb.start_service(HUB_CONNECTION_URI, @@hub_session_factory, { :safe_level => 1 })
       DRb.thread.join
+
+    rescue => e
+      Sentry.capture_exception(e) if defined?(Sentry) && Sentry.respond_to?(:capture_exception)
+      raise
     end
   end # Server module
 
