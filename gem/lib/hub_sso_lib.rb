@@ -555,6 +555,15 @@ module HubSsoLib
       noscript_img_src = "#{HUB_PATH_PREFIX}/account/login_indication.png"
       noscript_img_tag = helpers.image_tag(noscript_img_src, size: '90x22', border: '0', alt: 'Log in or out')
 
+      if self.respond_to?(:request)
+        return_to_url = self.request.try(:original_url)
+
+        if return_to_url.present?
+          return_query = URI.encode_www_form({ return_to_url: return_to_url.to_s })
+          ui_href << "?#{return_query}"
+        end
+      end
+
       logged_in_link   = helpers.link_to('Account',        ui_href, id: 'hubssolib_logged_in_link')
       logged_out_link  = helpers.link_to('Log in',         ui_href, id: 'hubssolib_logged_out_link')
       noscript_link    = helpers.link_to(noscript_img_tag, ui_href, id: 'hubssolib_login_noscript')

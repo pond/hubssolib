@@ -613,7 +613,10 @@ class AccountController < ApplicationController
         hubssolib_store_location(nil)
         redirect_to root_path()
       else
-        hubssolib_store_location(request.referrer)
+        return_to_url   = params[:return_to_url] unless params[:return_to_url].blank?
+        return_to_url ||= request.referrer
+
+        hubssolib_store_location(return_to_url)
         redirect_to login_account_path()
       end
     end

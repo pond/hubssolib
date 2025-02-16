@@ -1,3 +1,7 @@
+## 3.2.1, 16-Feb-2025
+
+Updated for Hub gem version 3.2.1 - more reliable return-to-previous-location behaviour via the log in/out status indicator.
+
 ## 3.2.0 (15-Feb-2025)
 
 Updated for Hub gem version 3.2.0 - participates in the user change handler registration mechanism. A Hub-integrated external application can invoke HubSsoLib::Core#hubssolib_register_user_change_handler to register an interest in Hub user alterations. See the gem's `README.md` for details, under "Applications with an existing user model".

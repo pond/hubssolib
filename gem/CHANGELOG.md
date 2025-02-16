@@ -1,3 +1,7 @@
+## 3.2.1, 16-Feb-2025
+
+The conditional login return-via-referrer mechanism never really worked, so instead have the login status indicator link generate a return-to URL in the query string instead and forward that, if present, in preference.
+
 ## 3.2.0, 15-Feb-2025
 
 Introduces the user change handler mechanism, a scheme whereby an external application tells Hub about a Rake task that the application has implemented, through which Hub can inform if of changes to a user's e-mail address or "real" name. See the gem's `README.md` for details, under "Applications with an existing user model".
