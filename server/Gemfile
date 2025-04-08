@@ -1,4 +1,0 @@
-source 'https://rubygems.org'
-
-gem 'hubssolib', '~> 2.1.0', :require => 'hub_sso_lib'
-
